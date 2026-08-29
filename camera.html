@@ -168,14 +168,45 @@
     }
 
     .print-thumb {
+      position: relative;
       min-height: 132px;
       display: grid;
       place-items: center;
+      overflow: hidden;
       border-radius: 6px;
       background: #e7e9ed;
       color: #cdd1d6;
       font-size: 58px;
       user-select: none;
+    }
+
+    .print-thumb-image {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #eef0f3;
+    }
+
+    /* Author CSS can override the browser's default [hidden] rule.
+       Force the failed/empty image completely out of layout. */
+    .print-thumb-image[hidden] {
+      display: none !important;
+    }
+
+    .print-thumb.has-image {
+      background: #eef0f3;
+    }
+
+    .print-thumb-placeholder {
+      display: inline-grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .print-thumb-placeholder[hidden] {
+      display: none !important;
     }
 
     .print-info {
@@ -1207,14 +1238,39 @@
     }
 
     .sort-head {
+      width: max-content;
+      padding: 6px 4px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
       color: #2d3540;
+      font: inherit;
       white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sort-head:hover {
+      background: #f3f5f7;
+      color: #111820;
+    }
+
+    .sort-head.active {
+      color: var(--accent);
+      font-weight: 600;
     }
 
     .sort-mark {
+      display: inline-block;
+      min-width: 14px;
       margin-left: 5px;
       color: #9da5ae;
       font-size: 14px;
+      text-align: center;
+    }
+
+    .sort-head.active .sort-mark {
+      color: var(--accent);
     }
 
     .file-card-grid {
@@ -1623,6 +1679,107 @@
       }
     }
 
+  
+    /* Local file manager actions --------------------------------------- */
+    .file-shot-icon {
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    .file-shot-icon svg {
+      width: 20px;
+      height: 20px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .file-shot-icon:disabled {
+      opacity: .35;
+      cursor: default;
+    }
+
+    .file-shot-icon:disabled:hover {
+      background: transparent;
+      color: #8c96a1;
+    }
+
+    .file-shot-icon.import-action:hover,
+    .file-shot-icon.import-action:focus-visible {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .file-card {
+      cursor: default;
+      transition: border-color .12s ease, box-shadow .12s ease;
+    }
+
+    .file-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(22, 199, 102, .08);
+    }
+
+    .file-card.selected .file-card-check {
+      accent-color: var(--accent);
+    }
+
+    .file-context-menu {
+      position: fixed;
+      z-index: 1000;
+      width: 150px;
+      padding: 7px 0;
+      border: 1px solid #dfe3e8;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(31, 38, 46, .18);
+      color: #303740;
+      user-select: none;
+    }
+
+    .file-context-menu[hidden] {
+      display: none;
+    }
+
+    .file-context-menu button {
+      width: 100%;
+      height: 40px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #303740;
+      font: 500 14px/1 inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .file-context-menu button:hover {
+      background: #f2f4f6;
+      color: #1f252c;
+    }
+
+    .file-context-menu button.danger:hover {
+      background: #fff1f1;
+      color: #d83939;
+    }
+
+    .file-upload-busy {
+      cursor: wait !important;
+      opacity: .58;
+    }
+
+    @media (max-width: 760px) {
+      .file-context-menu {
+        width: 142px;
+      }
+    }
+
   </style>
 </head>
 
@@ -1653,7 +1810,10 @@
           <span>当前打印</span>
         </div>
         <div class="print-body">
-          <div class="print-thumb" aria-hidden="true">◇</div>
+          <div id="printThumb" class="print-thumb" aria-hidden="true">
+            <img id="printThumbImage" class="print-thumb-image" alt="" hidden>
+            <span id="printThumbPlaceholder" class="print-thumb-placeholder">◇</span>
+          </div>
           <div class="print-info">
             <div>
               <div id="printFile" class="print-file" title="">正在等待打印机数据...</div>
@@ -1905,7 +2065,33 @@
             <div class="file-shot-topbar">
               <div class="file-selected-count">已选文件： <strong id="fileSelectedCount">0</strong> / <strong id="fileTotalCount">0</strong></div>
               <div class="file-shot-actions">
-                <button id="refreshFiles" class="file-shot-icon" type="button" title="刷新文件" aria-label="刷新文件">↻</button>
+                <button id="exportSelectedFiles" class="file-shot-icon" type="button"
+                        title="导出" aria-label="导出所选文件" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M14 4h6v6"></path>
+                    <path d="M20 4l-8 8"></path>
+                    <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path>
+                  </svg>
+                </button>
+
+                <button id="importLocalFile" class="file-shot-icon import-action" type="button"
+                        title="导入" aria-label="导入 G-code 文件">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3v12"></path>
+                    <path d="m8 11 4 4 4-4"></path>
+                    <path d="M5 4h-1a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1"></path>
+                  </svg>
+                </button>
+
+                <button id="deleteSelectedFiles" class="file-shot-icon" type="button"
+                        title="删除" aria-label="删除所选文件" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16"></path>
+                    <path d="M9 7V4h6v3"></path>
+                    <path d="m6 7 1 13h10l1-13"></path>
+                    <path d="M10 11v5M14 11v5"></path>
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -1914,9 +2100,18 @@
                 <span>全选</span>
                 <input id="selectAllFiles" type="checkbox" aria-label="全选本地文件">
               </label>
-              <span class="sort-head">文件大小 <span class="sort-mark">⇅</span></span>
-              <span class="sort-head">层高 <span class="sort-mark">⇅</span></span>
-              <span class="sort-head">创建时间 <span class="sort-mark">⇅</span></span>
+              <button class="sort-head" type="button" data-file-sort="size"
+                      aria-label="按文件大小排序" title="按文件大小排序">
+                文件大小 <span class="sort-mark">⇅</span>
+              </button>
+              <button class="sort-head" type="button" data-file-sort="layerHeight"
+                      aria-label="按层高排序" title="按层高排序">
+                层高 <span class="sort-mark">⇅</span>
+              </button>
+              <button class="sort-head" type="button" data-file-sort="modified"
+                      aria-label="按创建时间排序" title="按创建时间排序">
+                创建时间 <span class="sort-mark">⇅</span>
+              </button>
             </div>
 
             <div id="filesContent" class="empty-state">
@@ -1958,6 +2153,14 @@
     </div>
   </div>
 
+  <input id="fileImportInput" type="file" accept=".gcode,.gco,.gc" multiple hidden>
+
+  <div id="fileContextMenu" class="file-context-menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-file-action="print">开始打印</button>
+    <button type="button" role="menuitem" data-file-action="export">导出</button>
+    <button type="button" role="menuitem" data-file-action="delete" class="danger">删除</button>
+  </div>
+
   <pre id="debug" class="debug" hidden></pre>
   <div id="toast" class="toast"></div>
 
@@ -1986,6 +2189,9 @@
     const printStateElement = $("#printState");
     const printProgressElement = $("#printProgress");
     const printFileElement = $("#printFile");
+    const printThumbElement = $("#printThumb");
+    const printThumbImage = $("#printThumbImage");
+    const printThumbPlaceholder = $("#printThumbPlaceholder");
     const progressBar = $("#progressBar");
     const printLayerElement = $("#printLayer");
     const printTimeElement = $("#printTime");
@@ -2027,6 +2233,16 @@
     let cfsData = null;
     let materialProfiles = [];
     let activeMaterialEditor = null;
+
+    let currentFileRecords = [];
+    let currentFileSourceItems = [];
+    let fileSortState = { key: null, direction: 1 };
+    let fileContextTargetIndex = -1;
+    let fileUploadBusy = false;
+
+    const gcodeThumbnailCache = new Map();
+    let currentPrintThumbnailPath = "";
+    let currentPrintThumbnailRequestId = 0;
 
     const logLines = [];
     const printerState = {};
@@ -2153,6 +2369,145 @@
       return result;
     }
 
+
+    function dirnamePath(path) {
+      const parts = normaliseLocalGcodePath(path).split("/").filter(Boolean);
+      parts.pop();
+      return parts.join("/");
+    }
+
+    function joinRelativePath(baseDir, relativePath) {
+      const output = [];
+      for (const part of `${baseDir ? `${baseDir}/` : ""}${relativePath || ""}`.split("/")) {
+        if (!part || part === ".") continue;
+        if (part === "..") output.pop();
+        else output.push(part);
+      }
+      return output.join("/");
+    }
+
+    function setCurrentPrintThumbnail(url = "", title = "") {
+      if (url) {
+        printThumbImage.hidden = true;
+        printThumbImage.alt = "";
+        printThumbImage.src = url;
+        printThumbPlaceholder.hidden = true;
+        printThumbElement.classList.add("has-image");
+
+        // Show only after the browser confirms the image is valid.
+        if (printThumbImage.complete && printThumbImage.naturalWidth > 0) {
+          printThumbImage.hidden = false;
+        }
+      } else {
+        printThumbImage.hidden = true;
+        printThumbImage.alt = "";
+        printThumbImage.removeAttribute("src");
+        printThumbPlaceholder.hidden = false;
+        printThumbElement.classList.remove("has-image");
+      }
+    }
+
+    function chooseThumbnail(items) {
+      const list = Array.isArray(items) ? items.filter(Boolean).slice() : [];
+      if (!list.length) return null;
+
+      // Prefer a medium/large image.  This avoids picking the 32x32 icon
+      // when a 300/400px preview exists.
+      list.sort((a, b) => {
+        const aArea = (Number(a?.width) || 0) * (Number(a?.height) || 0);
+        const bArea = (Number(b?.width) || 0) * (Number(b?.height) || 0);
+        return aArea - bArea;
+      });
+
+      return list.find(item =>
+        (Number(item?.width) || 0) >= 160 &&
+        (Number(item?.height) || 0) >= 120
+      ) || list[list.length - 1];
+    }
+
+    function thumbnailUrlFromDetails(items) {
+      const thumbnail = chooseThumbnail(items);
+      const path = thumbnail?.thumbnail_path;
+      if (!path) return "";
+      return `/server/files/gcodes/${encodeGcodePath(path)}`;
+    }
+
+    function thumbnailUrlFromMetadata(metadata, filePath) {
+      const thumbnail = chooseThumbnail(metadata?.thumbnails);
+      const relative = thumbnail?.relative_path || thumbnail?.path;
+      if (!relative) return "";
+
+      // metadata.relative_path is relative to the gcode file's parent folder.
+      const joined = joinRelativePath(dirnamePath(filePath), relative);
+      return joined ? `/server/files/gcodes/${encodeGcodePath(joined)}` : "";
+    }
+
+    async function getCurrentPrintThumbnailUrl(filePath) {
+      const normalized = normaliseLocalGcodePath(filePath);
+      if (!normalized) return "";
+
+      const cached = gcodeThumbnailCache.get(normalized);
+      if (cached !== undefined) return cached || "";
+
+      // Preferred Moonraker API: returns thumbnail_path relative to gcodes root.
+      try {
+        const payload = await fetchJson(
+          `/server/files/thumbnails?filename=${encodeURIComponent(normalized)}`
+        );
+        const items = payload?.result ?? payload;
+        const url = thumbnailUrlFromDetails(items);
+        if (url) {
+          gcodeThumbnailCache.set(normalized, url);
+          log(`当前打印预览图 → ${url}`);
+          return url;
+        }
+      } catch (error) {
+        log(`缩略图接口不可用，尝试 metadata：${error.message}`);
+      }
+
+      // Compatibility fallback for older Moonraker versions.
+      try {
+        const payload = await fetchJson(
+          `/server/files/metadata?filename=${encodeURIComponent(normalized)}`
+        );
+        const metadata = payload?.result ?? payload ?? null;
+        const url = thumbnailUrlFromMetadata(metadata, normalized);
+        gcodeThumbnailCache.set(normalized, url || "");
+        if (url) log(`当前打印预览图(metadata) → ${url}`);
+        return url || "";
+      } catch (error) {
+        log(`读取 G-code 缩略图失败 ${normalized}：${error.message}`);
+        gcodeThumbnailCache.set(normalized, "");
+        return "";
+      }
+    }
+
+    async function updateCurrentPrintThumbnail(filePath, displayName = "") {
+      const normalized = normaliseLocalGcodePath(filePath);
+      const requestId = ++currentPrintThumbnailRequestId;
+
+      if (!normalized) {
+        currentPrintThumbnailPath = "";
+        setCurrentPrintThumbnail("", "");
+        return;
+      }
+
+      // Don't repeatedly hit Moonraker on every telemetry update.
+      if (normalized === currentPrintThumbnailPath) return;
+
+      currentPrintThumbnailPath = normalized;
+      setCurrentPrintThumbnail("", displayName);
+
+      const thumbnailUrl = await getCurrentPrintThumbnailUrl(normalized);
+      if (requestId !== currentPrintThumbnailRequestId) return;
+
+      if (thumbnailUrl) {
+        setCurrentPrintThumbnail(thumbnailUrl, displayName || getFileName(normalized));
+      } else {
+        setCurrentPrintThumbnail("", displayName || getFileName(normalized));
+      }
+    }
+
     /* Rendering ---------------------------------------------------------- */
     function renderPrinterStatus() {
       const state = getFriendlyState();
@@ -2170,6 +2525,12 @@
       progressBar.style.width = `${progress}%`;
       printFileElement.textContent = telemetryReady ? fileName : "正在等待打印机数据...";
       printFileElement.title = telemetryReady ? fileName : "";
+
+      if (telemetryReady && printerState.printFileName) {
+        updateCurrentPrintThumbnail(printerState.printFileName, fileName);
+      } else if (!printerState.printFileName) {
+        updateCurrentPrintThumbnail("", "");
+      }
       printLayerElement.textContent = `${layer} / ${totalLayer} 层`;
       printTimeElement.textContent = `${formatDuration(elapsed)} / ${formatDuration(remaining)}`;
 
@@ -2867,12 +3228,56 @@
       return `${n.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}m`;
     }
 
+    function getFileRecord(index) {
+      const record = currentFileRecords[Number(index)];
+      return record || null;
+    }
+
+    function normaliseLocalGcodePath(value) {
+      let path = String(value || "").trim().replace(/\\/g, "/");
+      path = path.replace(/^\/mnt\/UDISK\/printer_data\/gcodes\//i, "");
+      path = path.replace(/^gcodes\//i, "");
+      path = path.replace(/^\/+/, "");
+      return path;
+    }
+
+    function encodeGcodePath(path) {
+      return normaliseLocalGcodePath(path)
+        .split("/")
+        .filter(Boolean)
+        .map(part => encodeURIComponent(part))
+        .join("/");
+    }
+
+    function absoluteK2GcodePath(path) {
+      return `/mnt/UDISK/printer_data/gcodes/${normaliseLocalGcodePath(path)}`;
+    }
+
+    function getSelectedFileIndexes() {
+      return Array.from(document.querySelectorAll("#filesContent .file-card-check:checked"))
+        .map(check => Number(check.closest(".file-card")?.dataset.fileIndex))
+        .filter(index => Number.isInteger(index) && getFileRecord(index));
+    }
+
+    function getSelectedFileRecords() {
+      return getSelectedFileIndexes()
+        .map(index => getFileRecord(index))
+        .filter(Boolean);
+    }
+
     function updateFileSelectionUi() {
       const checks = Array.from(document.querySelectorAll("#filesContent .file-card-check"));
       const selected = checks.filter(check => check.checked).length;
       const selectedCount = $("#fileSelectedCount");
       const totalCount = $("#fileTotalCount");
       const selectAll = $("#selectAllFiles");
+      const exportButton = $("#exportSelectedFiles");
+      const deleteButton = $("#deleteSelectedFiles");
+
+      for (const check of checks) {
+        const card = check.closest(".file-card");
+        if (card) card.classList.toggle("selected", check.checked);
+      }
 
       if (selectedCount) selectedCount.textContent = String(selected);
       if (totalCount) totalCount.textContent = String(checks.length);
@@ -2881,13 +3286,203 @@
         selectAll.checked = checks.length > 0 && selected === checks.length;
         selectAll.indeterminate = selected > 0 && selected < checks.length;
       }
+
+      if (exportButton) exportButton.disabled = selected === 0;
+      if (deleteButton) deleteButton.disabled = selected === 0;
     }
 
-    function renderFileList(items) {
+    function hideFileContextMenu() {
+      const menu = $("#fileContextMenu");
+      if (menu) menu.hidden = true;
+      fileContextTargetIndex = -1;
+    }
+
+    function showFileContextMenu(event, card) {
+      event.preventDefault();
+
+      const index = Number(card?.dataset.fileIndex);
+      if (!Number.isInteger(index) || !getFileRecord(index)) return;
+
+      const check = card.querySelector(".file-card-check");
+
+      // Right-clicking an unselected file selects it and clears the old
+      // selection, matching the behaviour of a normal desktop file manager.
+      if (check && !check.checked) {
+        document.querySelectorAll("#filesContent .file-card-check").forEach(item => {
+          item.checked = false;
+        });
+        check.checked = true;
+        updateFileSelectionUi();
+      }
+
+      fileContextTargetIndex = index;
+
+      const menu = $("#fileContextMenu");
+      menu.hidden = false;
+      menu.style.left = "0px";
+      menu.style.top = "0px";
+
+      const rect = menu.getBoundingClientRect();
+      const margin = 8;
+      const left = Math.min(
+        event.clientX,
+        Math.max(margin, window.innerWidth - rect.width - margin)
+      );
+      const top = Math.min(
+        event.clientY,
+        Math.max(margin, window.innerHeight - rect.height - margin)
+      );
+
+      menu.style.left = `${Math.max(margin, left)}px`;
+      menu.style.top = `${Math.max(margin, top)}px`;
+    }
+
+    function fileNumericValue(value) {
+      if (value === undefined || value === null || value === "") return null;
+      const number = Number(value);
+      if (Number.isFinite(number)) return number;
+
+      const match = String(value).replace(",", ".").match(/-?\d+(?:\.\d+)?/);
+      if (!match) return null;
+      const parsed = Number(match[0]);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function fileTimeValue(value) {
+      if (value === undefined || value === null || value === "") return null;
+
+      if (typeof value === "number" && Number.isFinite(value)) {
+        // Moonraker normally reports UNIX seconds. Also accept millisecond values.
+        return value < 1e12 ? value * 1000 : value;
+      }
+
+      const raw = String(value).trim();
+      if (!raw) return null;
+
+      if (/^\d+(?:\.\d+)?$/.test(raw)) {
+        const numeric = Number(raw);
+        if (Number.isFinite(numeric)) return numeric < 1e12 ? numeric * 1000 : numeric;
+      }
+
+      // K2 may return MM-DD HH:mm:ss without a year.
+      const shortDate = raw.match(/^(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+      if (shortDate) {
+        const now = new Date();
+        return new Date(
+          now.getFullYear(),
+          Number(shortDate[1]) - 1,
+          Number(shortDate[2]),
+          Number(shortDate[3]),
+          Number(shortDate[4]),
+          Number(shortDate[5] || 0)
+        ).getTime();
+      }
+
+      // Also accept YYYY-MM-DD HH:mm:ss and browser-parseable ISO forms.
+      const normalized = raw.replace(
+        /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?$/,
+        "$1-$2-$3T$4:$5:$6"
+      );
+      const parsed = Date.parse(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function compareFileSortValues(a, b, direction) {
+      const aMissing = a === null || a === undefined || Number.isNaN(a);
+      const bMissing = b === null || b === undefined || Number.isNaN(b);
+
+      // Missing metadata always stays at the end, regardless of sort direction.
+      if (aMissing && bMissing) return 0;
+      if (aMissing) return 1;
+      if (bMissing) return -1;
+
+      if (a < b) return -1 * direction;
+      if (a > b) return 1 * direction;
+      return 0;
+    }
+
+    function sortFileRecords(records) {
+      const { key, direction } = fileSortState;
+      if (!key) return records;
+
+      return records.slice().sort((left, right) => {
+        let a = null;
+        let b = null;
+
+        if (key === "size") {
+          a = fileNumericValue(left.size);
+          b = fileNumericValue(right.size);
+        } else if (key === "layerHeight") {
+          a = fileNumericValue(left.layerHeight);
+          b = fileNumericValue(right.layerHeight);
+        } else if (key === "modified") {
+          a = fileTimeValue(left.modified);
+          b = fileTimeValue(right.modified);
+        }
+
+        const result = compareFileSortValues(a, b, direction);
+        if (result !== 0) return result;
+
+        // Stable, predictable fallback when values are equal.
+        return String(left.fullName || "").localeCompare(
+          String(right.fullName || ""),
+          "zh-CN",
+          { numeric: true, sensitivity: "base" }
+        );
+      });
+    }
+
+    function updateFileSortUi() {
+      document.querySelectorAll("[data-file-sort]").forEach(button => {
+        const key = button.dataset.fileSort;
+        const active = key === fileSortState.key;
+        const mark = button.querySelector(".sort-mark");
+
+        button.classList.toggle("active", active);
+        button.setAttribute(
+          "aria-label",
+          active
+            ? `${button.textContent.replace(/[⇅↑↓]/g, "").trim()}，当前${fileSortState.direction === 1 ? "升序" : "降序"}`
+            : `${button.textContent.replace(/[⇅↑↓]/g, "").trim()}，点击排序`
+        );
+
+        if (mark) {
+          mark.textContent = active
+            ? (fileSortState.direction === 1 ? "↑" : "↓")
+            : "⇅";
+        }
+      });
+    }
+
+    function toggleFileSort(key) {
+      if (!["size", "layerHeight", "modified"].includes(key)) return;
+
+      const selectedPaths = new Set(
+        getSelectedFileRecords().map(record => record.path)
+      );
+
+      if (fileSortState.key === key) {
+        fileSortState.direction *= -1;
+      } else {
+        fileSortState.key = key;
+        fileSortState.direction = 1;
+      }
+
+      renderFileList(currentFileSourceItems, selectedPaths);
+    }
+
+    function renderFileList(items, selectedPaths = null) {
       const target = $("#filesContent");
       const totalCount = $("#fileTotalCount");
       const selectedCount = $("#fileSelectedCount");
       const selectAll = $("#selectAllFiles");
+
+      hideFileContextMenu();
+      currentFileRecords = [];
+
+      if (Array.isArray(items)) {
+        currentFileSourceItems = items.slice(0, 100);
+      }
 
       if (!Array.isArray(items) || !items.length) {
         if (totalCount) totalCount.textContent = "0";
@@ -2896,18 +3491,23 @@
           selectAll.checked = false;
           selectAll.indeterminate = false;
         }
+        if ($("#exportSelectedFiles")) $("#exportSelectedFiles").disabled = true;
+        if ($("#deleteSelectedFiles")) $("#deleteSelectedFiles").disabled = true;
+
+        updateFileSortUi();
         target.className = "empty-state";
         target.innerHTML = `<div><strong>没有找到本地文件</strong>或者当前固件没有返回文件列表。</div>`;
         return;
       }
 
       const files = items.slice(0, 100);
-      target.className = "file-card-grid";
-      target.innerHTML = files.map((item, index) => {
-        const path = typeof item === "string" ? item :
+
+      const mappedRecords = files.map((item, index) => {
+        const rawPath = typeof item === "string" ? item :
           findObjectValue(item, ["path", "filename", "name", "file", "gcode"]) ?? JSON.stringify(item);
 
-        const fullName = String(path || "").split(/[\\/]/).pop() || "未命名.gcode";
+        const path = normaliseLocalGcodePath(rawPath);
+        const fullName = String(path || rawPath || "").split(/[\\/]/).pop() || "未命名.gcode";
         const size = typeof item === "object" ? findObjectValue(item, ["size", "fileSize"]) : "";
         const modified = typeof item === "object"
           ? findObjectValue(item, ["modified", "mtime", "time", "date", "createTime", "created"])
@@ -2929,29 +3529,262 @@
             : String(layerHeight);
         }
 
-        return `
-          <article class="file-card" data-file-index="${index}">
+        return {
+          index,
+          raw: item,
+          path,
+          fullName,
+          size,
+          modified,
+          layerHeight,
+          layerText,
+          filament
+        };
+      });
+
+      currentFileRecords = sortFileRecords(mappedRecords).map((record, index) => ({
+        ...record,
+        index
+      }));
+
+      updateFileSortUi();
+
+      target.className = "file-card-grid";
+      target.innerHTML = currentFileRecords.map(record => `
+          <article class="file-card" data-file-index="${record.index}">
             <div class="file-card-thumb"><span>GCODE</span></div>
             <div class="file-card-info">
-              <div class="file-card-name" title="${escapeHtml(fullName)}">${escapeHtml(fullName)}</div>
+              <div class="file-card-name" title="${escapeHtml(record.fullName)}">${escapeHtml(record.fullName)}</div>
               <div class="file-card-meta">
-                <div>层高: ${escapeHtml(layerText)}</div>
-                <div>创建时间: ${escapeHtml(formatDate(modified))}</div>
+                <div>层高: ${escapeHtml(record.layerText)}</div>
+                <div>创建时间: ${escapeHtml(formatDate(record.modified))}</div>
               </div>
               <div class="file-card-meta right">
-                <div>耗材长度: ${escapeHtml(formatFilamentLength(filament))}</div>
-                <div>文件大小: ${escapeHtml(formatBytes(size))}</div>
+                <div>耗材长度: ${escapeHtml(formatFilamentLength(record.filament))}</div>
+                <div>文件大小: ${escapeHtml(formatBytes(record.size))}</div>
               </div>
             </div>
-            <input class="file-card-check" type="checkbox" aria-label="选择 ${escapeHtml(fullName)}">
-          </article>`;
-      }).join("");
+            <input class="file-card-check" type="checkbox"
+                   ${selectedPaths?.has(record.path) ? "checked" : ""}
+                   aria-label="选择 ${escapeHtml(record.fullName)}">
+          </article>`).join("");
+
+      target.querySelectorAll(".file-card").forEach(card => {
+        card.addEventListener("contextmenu", event => showFileContextMenu(event, card));
+      });
 
       target.querySelectorAll(".file-card-check").forEach(check => {
         check.addEventListener("change", updateFileSelectionUi);
       });
 
       updateFileSelectionUi();
+    }
+
+    async function requestMoonraker(path, options = {}) {
+      const response = await fetch(path, {
+        cache: "no-store",
+        ...options
+      });
+
+      if (!response.ok) {
+        let detail = "";
+        try {
+          const body = await response.text();
+          detail = body ? ` · ${body.slice(0, 160)}` : "";
+        } catch {}
+        throw new Error(`HTTP ${response.status}${detail}`);
+      }
+
+      const type = response.headers.get("content-type") || "";
+      if (type.includes("application/json")) return response.json();
+      return response.text();
+    }
+
+    async function startLocalPrint(record) {
+      if (!record?.path) return;
+      hideFileContextMenu();
+
+      if (!confirm(`确定要开始打印“${record.fullName}”吗？`)) return;
+
+      try {
+        await requestMoonraker(
+          `/printer/print/start?filename=${encodeURIComponent(record.path)}`,
+          { method: "POST" }
+        );
+        log(`开始打印 → ${record.path}`);
+        showToast(`已开始打印：${record.fullName}`);
+        return;
+      } catch (error) {
+        log(`Moonraker 启动打印失败，尝试 K2 本地控制接口：${error.message}`);
+      }
+
+      // Fallback for K2 firmware.  The reverse-engineered K2 protocol
+      // documents opGcodeFile as the spool-holder print command.
+      const absolutePath = absoluteK2GcodePath(record.path);
+      const ok = sendSet({
+        opGcodeFile: `printprt:${absolutePath}`,
+        enableSelfTest: 0
+      }, true);
+
+      if (ok) {
+        log(`K2 opGcodeFile → ${absolutePath}`);
+        showToast(`已发送打印任务：${record.fullName}`);
+      } else {
+        showToast("启动打印失败：Moonraker 和 K2 控制通道均不可用");
+      }
+    }
+
+    function exportLocalFile(record) {
+      if (!record?.path) return;
+      hideFileContextMenu();
+
+      const link = document.createElement("a");
+      link.href = `/server/files/gcodes/${encodeGcodePath(record.path)}`;
+      link.download = record.fullName || "";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      log(`导出文件 → ${record.path}`);
+    }
+
+    function exportSelectedLocalFiles() {
+      const records = getSelectedFileRecords();
+      if (!records.length) {
+        showToast("请先选择需要导出的文件");
+        return;
+      }
+
+      records.forEach((record, index) => {
+        setTimeout(() => exportLocalFile(record), index * 180);
+      });
+
+      if (records.length > 1) {
+        showToast(`正在导出 ${records.length} 个文件`);
+      }
+    }
+
+    async function deleteLocalFiles(records) {
+      const clean = (records || []).filter(record => record?.path);
+      if (!clean.length) {
+        showToast("请先选择需要删除的文件");
+        return;
+      }
+
+      const label = clean.length === 1
+        ? `“${clean[0].fullName}”`
+        : `${clean.length} 个所选文件`;
+
+      if (!confirm(`确定永久删除${label}吗？此操作无法撤销。`)) return;
+
+      hideFileContextMenu();
+
+      let success = 0;
+      const failed = [];
+
+      for (const record of clean) {
+        try {
+          await requestMoonraker(
+            `/server/files/gcodes/${encodeGcodePath(record.path)}`,
+            { method: "DELETE" }
+          );
+          success++;
+          gcodeThumbnailCache.delete(normaliseLocalGcodePath(record.path));
+          log(`删除文件 → ${record.path}`);
+        } catch (error) {
+          failed.push(record.fullName);
+          log(`删除文件失败 ${record.path}：${error.message}`);
+        }
+      }
+
+      if (failed.length) {
+        showToast(`已删除 ${success} 个，失败 ${failed.length} 个`);
+      } else {
+        showToast(`已删除 ${success} 个文件`);
+      }
+
+      await refreshFiles();
+    }
+
+    async function uploadLocalFiles(fileList) {
+      if (fileUploadBusy) return;
+
+      const files = Array.from(fileList || []);
+      if (!files.length) return;
+
+      const supported = files.filter(file => /\.(gcode|gco|gc)$/i.test(file.name));
+      if (!supported.length) {
+        showToast("请选择 G-code 文件（.gcode / .gco / .gc）");
+        return;
+      }
+
+      const existing = new Set(currentFileRecords.map(record => record.path.toLowerCase()));
+      const duplicates = supported.filter(file => existing.has(file.name.toLowerCase()));
+      if (duplicates.length) {
+        const names = duplicates.slice(0, 3).map(file => file.name).join("、");
+        const more = duplicates.length > 3 ? ` 等 ${duplicates.length} 个文件` : "";
+        if (!confirm(`以下文件已存在：${names}${more}\n继续将尝试覆盖同名文件，是否继续？`)) {
+          return;
+        }
+      }
+
+      fileUploadBusy = true;
+      const importButton = $("#importLocalFile");
+      if (importButton) importButton.classList.add("file-upload-busy");
+
+      let success = 0;
+      const failed = [];
+
+      try {
+        for (let index = 0; index < supported.length; index++) {
+          const file = supported[index];
+          showToast(`正在导入 ${index + 1}/${supported.length}：${file.name}`);
+
+          const form = new FormData();
+          form.append("file", file, file.name);
+          form.append("root", "gcodes");
+          form.append("print", "false");
+
+          try {
+            await requestMoonraker("/server/files/upload", {
+              method: "POST",
+              body: form
+            });
+            success++;
+            gcodeThumbnailCache.delete(normaliseLocalGcodePath(file.name));
+            log(`导入文件 → ${file.name} (${file.size} bytes)`);
+          } catch (error) {
+            failed.push(file.name);
+            log(`导入文件失败 ${file.name}：${error.message}`);
+          }
+        }
+      } finally {
+        fileUploadBusy = false;
+        if (importButton) importButton.classList.remove("file-upload-busy");
+        const input = $("#fileImportInput");
+        if (input) input.value = "";
+      }
+
+      if (failed.length) {
+        showToast(`导入完成：成功 ${success} 个，失败 ${failed.length} 个`);
+      } else {
+        showToast(`成功导入 ${success} 个文件`);
+      }
+
+      await refreshFiles();
+    }
+
+    function runFileContextAction(action) {
+      const record = getFileRecord(fileContextTargetIndex);
+      if (!record) {
+        hideFileContextMenu();
+        return;
+      }
+
+      if (action === "print") startLocalPrint(record);
+      else if (action === "export") exportLocalFile(record);
+      else if (action === "delete") deleteLocalFiles([record]);
     }
 
     function renderHistory(items) {
@@ -3645,13 +4478,67 @@
     });
 
     $("#refreshCfs").addEventListener("click", refreshCfs);
-    $("#refreshFiles").addEventListener("click", refreshFiles);
+
+    $("#exportSelectedFiles").addEventListener("click", exportSelectedLocalFiles);
+    $("#importLocalFile").addEventListener("click", () => {
+      if (!fileUploadBusy) $("#fileImportInput").click();
+    });
+    $("#deleteSelectedFiles").addEventListener("click", () => {
+      deleteLocalFiles(getSelectedFileRecords());
+    });
+    $("#fileImportInput").addEventListener("change", event => {
+      uploadLocalFiles(event.target.files);
+    });
+
+    $("#fileContextMenu").addEventListener("click", event => {
+      const button = event.target.closest("[data-file-action]");
+      if (!button) return;
+      const action = button.dataset.fileAction;
+      runFileContextAction(action);
+    });
+
     $("#selectAllFiles").addEventListener("change", event => {
       document.querySelectorAll("#filesContent .file-card-check").forEach(check => {
         check.checked = event.target.checked;
       });
       updateFileSelectionUi();
     });
+
+    document.querySelectorAll("[data-file-sort]").forEach(button => {
+      button.addEventListener("click", () => toggleFileSort(button.dataset.fileSort));
+    });
+    updateFileSortUi();
+
+    document.addEventListener("pointerdown", event => {
+      const menu = $("#fileContextMenu");
+      if (!menu.hidden && !menu.contains(event.target)) hideFileContextMenu();
+    });
+    document.addEventListener("contextmenu", event => {
+      if (!event.target.closest("#filesContent .file-card")) hideFileContextMenu();
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") hideFileContextMenu();
+    });
+    window.addEventListener("resize", hideFileContextMenu);
+    window.addEventListener("scroll", hideFileContextMenu, true);
+
+    printThumbImage.addEventListener("load", () => {
+      if (printThumbImage.naturalWidth > 0 && printThumbImage.naturalHeight > 0) {
+        printThumbPlaceholder.hidden = true;
+        printThumbImage.hidden = false;
+        printThumbElement.classList.add("has-image");
+        log(`当前打印预览图已加载：${printThumbImage.naturalWidth}×${printThumbImage.naturalHeight}`);
+      }
+    });
+
+    printThumbImage.addEventListener("error", () => {
+      if (currentPrintThumbnailPath) {
+        log(`当前打印预览图加载失败：${currentPrintThumbnailPath}`);
+      }
+      // Keep only the neutral placeholder; never expose broken-image alt text.
+      setCurrentPrintThumbnail("", "");
+    });
+
     $("#refreshHistory").addEventListener("click", refreshHistory);
     $("#refreshTimelapse").addEventListener("click", refreshTimelapse);
 
