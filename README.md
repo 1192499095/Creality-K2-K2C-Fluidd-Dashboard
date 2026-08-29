@@ -3,7 +3,6 @@
 > 面向创想三维 Creality K2 / Fluidd / Klipper 的单文件本地 Web 控制台。  
 > 集成原厂 WebRTC 摄像头、打印状态、温控、风扇、LED、打印速度、CFS/耗材管理、XYZ 控制、本地文件、历史记录与延时摄影。
 
-![Dashboard](docs/dashboard.png)
 
 ## 项目简介
 
