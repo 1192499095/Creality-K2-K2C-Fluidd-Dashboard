@@ -1,0 +1,3701 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>创想三维 K2 设备控制台</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f5f7;
+      --panel: #ffffff;
+      --card: #f6f7f9;
+      --line: #e2e5e9;
+      --text: #222831;
+      --muted: #7b8490;
+      --accent: #19c66b;
+      --accent-soft: #eafaf1;
+      --danger: #e45d63;
+      --warn: #f2aa3b;
+      --radius: 9px;
+      --shadow: 0 1px 2px rgba(20, 28, 38, .04);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+        "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    body { padding: 8px; }
+
+    button, input, select { font: inherit; }
+
+    button {
+      border: 0;
+      background: none;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .48;
+    }
+
+    .app {
+      width: 100%;
+      min-height: calc(100vh - 16px);
+      display: grid;
+      grid-template-columns: minmax(540px, 1.17fr) minmax(520px, 1fr);
+      gap: 8px;
+    }
+
+    .column {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      height: 38px;
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .panel-header .spacer { flex: 1; }
+
+    .header-icon {
+      width: 17px;
+      height: 17px;
+      display: inline-grid;
+      place-items: center;
+      color: #596370;
+    }
+
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 7px;
+      color: #58616d;
+      font-size: 16px;
+    }
+
+    .icon-btn:hover { background: #f0f2f4; }
+    .icon-btn.active { color: var(--accent); background: var(--accent-soft); }
+
+    /* Camera ------------------------------------------------------------- */
+    .camera-panel { flex: 0 0 auto; }
+
+    .camera-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+
+    #camera {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .camera-status {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, .48);
+      color: #fff;
+      font-size: 11px;
+      backdrop-filter: blur(8px);
+      transition: opacity .25s ease;
+    }
+
+    .camera-status.ready { opacity: 0; pointer-events: none; }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(242, 170, 59, .15);
+    }
+
+    .camera-status.ready .status-dot {
+      background: var(--accent);
+      box-shadow: 0 0 0 3px rgba(25, 198, 107, .16);
+    }
+
+    /* Current print ------------------------------------------------------ */
+    .print-panel { min-height: 190px; }
+
+    .print-body {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .print-thumb {
+      min-height: 132px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      background: #e7e9ed;
+      color: #cdd1d6;
+      font-size: 58px;
+      user-select: none;
+    }
+
+    .print-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 9px;
+    }
+
+    .print-file {
+      overflow: hidden;
+      font-size: 13px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .print-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .print-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .print-state::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      content: "";
+    }
+
+    .print-state[data-state="paused"],
+    .print-state[data-state="processing"] { color: var(--warn); }
+    .print-state[data-state="error"],
+    .print-state[data-state="stopped"] { color: var(--danger); }
+    .print-state[data-state="completed"] { color: #3386dc; }
+    .print-state[data-state="idle"],
+    .print-state[data-state="connecting"] { color: #8c949f; }
+
+    .progress-track {
+      height: 5px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e0e3e7;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: #4d535b;
+      transition: width .3s ease;
+    }
+
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      color: #555f6b;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .print-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+
+    .small-btn {
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid #dfe3e7;
+      border-radius: 7px;
+      background: #fff;
+      color: #49525d;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .small-btn:hover { border-color: #c9cfd6; background: #f7f8f9; }
+    .small-btn.primary { border-color: #b9eccf; color: #0ca957; background: #f1fcf6; }
+    .small-btn.danger { border-color: #f0c7c9; color: #d54a51; background: #fff7f7; }
+
+    /* Settings ----------------------------------------------------------- */
+    .settings-panel { flex: 0 0 auto; }
+
+    .settings-body { padding: 10px; }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .control-card {
+      min-width: 0;
+      min-height: 90px;
+      padding: 10px;
+      border-radius: 7px;
+      background: var(--card);
+    }
+
+    .control-card.fan { grid-column: span 1; }
+
+    .control-title-row {
+      min-height: 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .control-title {
+      color: #3b444f;
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .tiny-help {
+      color: #9099a4;
+      font-size: 11px;
+    }
+
+    .temperature-row {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: minmax(42px, 1fr) 14px minmax(58px, .9fr);
+      align-items: end;
+      gap: 5px;
+    }
+
+    .sub-label {
+      display: block;
+      margin-bottom: 4px;
+      color: #7c8590;
+      font-size: 10px;
+    }
+
+    .current-temp {
+      min-width: 0;
+      color: #333c47;
+      font-size: 12px;
+      font-weight: 650;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .temp-input-wrap {
+      position: relative;
+      min-width: 0;
+    }
+
+    .temp-input {
+      width: 100%;
+      height: 30px;
+      padding: 0 20px 0 8px;
+      border: 1px solid #e1e4e8;
+      border-radius: 7px;
+      outline: 0;
+      background: #fff;
+      color: #424b56;
+      font-size: 11px;
+    }
+
+    .temp-input:focus {
+      border-color: #9fe0bc;
+      box-shadow: 0 0 0 2px rgba(25, 198, 107, .08);
+    }
+
+    .unit {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #a2a9b1;
+      font-size: 10px;
+      pointer-events: none;
+    }
+
+    .switch {
+      position: relative;
+      width: 34px;
+      height: 19px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .switch-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #cdd2d8;
+      transition: .18s ease;
+    }
+
+    .switch-track::after {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .18);
+      content: "";
+      transition: .18s ease;
+    }
+
+    .switch input:checked + .switch-track { background: var(--accent); }
+    .switch input:checked + .switch-track::after { transform: translateX(15px); }
+
+    .led-icon {
+      margin-top: 7px;
+      color: var(--accent);
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .fan-row {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr) 36px;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fan-symbol { color: #79828c; font-size: 14px; }
+
+    .fan-range {
+      width: 100%;
+      min-width: 0;
+      accent-color: var(--accent);
+    }
+
+    .fan-pct {
+      color: #525c67;
+      font-size: 11px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .speed-block {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 7px;
+      background: var(--card);
+    }
+
+    .speed-title {
+      margin-bottom: 8px;
+      color: #505965;
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .speed-segments {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 2px;
+      border: 1px solid #e0e3e7;
+      border-radius: 999px;
+      background: #e8eaed;
+    }
+
+    .speed-btn {
+      height: 30px;
+      border-radius: 999px;
+      color: #4d5661;
+      font-size: 11px;
+    }
+
+    .speed-btn:hover { background: rgba(255, 255, 255, .65); }
+    .speed-btn.active {
+      background: #fff;
+      color: var(--accent);
+      box-shadow: 0 1px 3px rgba(22, 31, 41, .08);
+      font-weight: 700;
+    }
+
+    /* Tabs --------------------------------------------------------------- */
+    .workspace-panel {
+      flex: 1 1 auto;
+      min-height: 330px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tabs {
+      min-height: 38px;
+      padding: 0 8px;
+      display: flex;
+      align-items: stretch;
+      gap: 6px;
+      border-bottom: 1px solid var(--line);
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .tab-btn {
+      position: relative;
+      min-width: max-content;
+      padding: 0 14px;
+      color: #555f6a;
+      font-size: 12px;
+    }
+
+    .tab-btn.active { color: var(--accent); font-weight: 650; }
+
+    .tab-btn.active::after {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 0;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--accent);
+      content: "";
+    }
+
+    .tab-content {
+      min-height: 0;
+      flex: 1 1 auto;
+      position: relative;
+      overflow: auto;
+    }
+
+    .tab-pane {
+      display: none;
+      min-height: 100%;
+      padding: 16px;
+    }
+
+    .tab-pane.active { display: block; }
+
+    .empty-state {
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      color: #8b949f;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 6px;
+      color: #5d6671;
+      font-size: 13px;
+    }
+
+    /* CFS */
+    .cfs-toolbar,
+    .list-toolbar {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .section-hint {
+      color: #818a95;
+      font-size: 11px;
+    }
+
+    .cfs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 10px;
+    }
+
+    .cfs-card {
+      min-width: 0;
+      padding: 12px;
+      border: 1px solid #e2e5e9;
+      border-radius: 9px;
+      background: #fafbfc;
+    }
+
+    .cfs-card.active-slot {
+      border-color: #aee9c9;
+      box-shadow: inset 0 0 0 1px #d7f6e4;
+    }
+
+    .spool {
+      width: 54px;
+      height: 54px;
+      margin: 2px auto 8px;
+      display: grid;
+      place-items: center;
+      border: 6px solid #9ca4ad;
+      border-radius: 50%;
+      background: #fff;
+      color: #59626d;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .spool::after {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #68717b;
+      content: "";
+    }
+
+    .slot-title {
+      overflow: hidden;
+      color: #3e4752;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .slot-meta {
+      margin-top: 5px;
+      color: #808994;
+      font-size: 10px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* XYZ */
+    .xyz-layout {
+      display: grid;
+      grid-template-columns: minmax(250px, .9fr) minmax(260px, 1.1fr);
+      gap: 18px;
+    }
+
+    .control-section {
+      padding: 15px;
+      border: 1px solid #e5e8eb;
+      border-radius: 9px;
+      background: #fafbfc;
+    }
+
+    .section-title {
+      margin-bottom: 12px;
+      color: #444d58;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .position-line {
+      margin-bottom: 12px;
+      color: #6c7580;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .jog-grid {
+      width: 210px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 64px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 7px;
+      justify-content: center;
+    }
+
+    .jog-btn {
+      border: 1px solid #dde1e5;
+      border-radius: 8px;
+      background: #fff;
+      color: #4d5661;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .jog-btn:hover { border-color: #b7e8cc; color: #0fab5a; }
+    .jog-center { background: #f2f4f6; color: #8a929c; }
+
+    .step-row {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .step-btn {
+      min-width: 52px;
+      height: 28px;
+      padding: 0 9px;
+      border: 1px solid #dfe3e7;
+      border-radius: 7px;
+      background: #fff;
+      color: #68717c;
+      font-size: 10px;
+    }
+
+    .step-btn.active { border-color: #9fe2bd; color: #0da957; background: #f1fcf6; }
+
+    .z-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .wide-action {
+      height: 42px;
+      border: 1px solid #dfe3e7;
+      border-radius: 8px;
+      background: #fff;
+      color: #4e5762;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .wide-action:hover { border-color: #b5e8cc; color: #0ca957; }
+
+    /* Lists */
+    .data-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .data-row {
+      min-width: 0;
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid #e4e7ea;
+      border-radius: 8px;
+      background: #fafbfc;
+    }
+
+    .data-main { min-width: 0; }
+    .data-title {
+      overflow: hidden;
+      color: #404954;
+      font-size: 12px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .data-sub {
+      margin-top: 4px;
+      overflow: hidden;
+      color: #8a939d;
+      font-size: 10px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .data-side {
+      color: #6d7680;
+      font-size: 10px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timelapse-head {
+      margin-bottom: 14px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 8px;
+      background: #f6f7f9;
+    }
+
+    /* Debug -------------------------------------------------------------- */
+    .debug {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 50;
+      max-height: 34vh;
+      overflow: auto;
+      margin: 0;
+      padding: 11px 13px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 9px;
+      background: rgba(26, 31, 36, .94);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, .22);
+      color: #e8edf0;
+      font: 11px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+      white-space: pre-wrap;
+      backdrop-filter: blur(12px);
+    }
+
+    .debug[hidden] { display: none; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      z-index: 70;
+      transform: translate(-50%, 20px);
+      max-width: min(520px, calc(100vw - 40px));
+      padding: 9px 14px;
+      border-radius: 8px;
+      background: rgba(28, 33, 38, .92);
+      color: #fff;
+      font-size: 11px;
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+    }
+
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 1180px) {
+      .app { grid-template-columns: 1fr; }
+      .workspace-panel { min-height: 460px; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 5px; }
+      .app { gap: 5px; min-height: calc(100vh - 10px); }
+      .column { gap: 5px; }
+      .control-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .print-body { grid-template-columns: 100px minmax(0, 1fr); }
+      .print-thumb { min-height: 105px; font-size: 40px; }
+      .xyz-layout { grid-template-columns: 1fr; }
+      .cfs-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .speed-segments { grid-template-columns: repeat(2, 1fr); border-radius: 12px; }
+      .speed-btn { border-radius: 9px; }
+    }
+
+    @media (max-width: 430px) {
+      .control-grid { grid-template-columns: 1fr; }
+      .print-body { grid-template-columns: 1fr; }
+      .print-thumb { display: none; }
+      .cfs-grid { grid-template-columns: 1fr; }
+    }
+  
+    /* Screenshot-style tab layout -------------------------------------- */
+    .workspace-panel .tabs {
+      min-height: 52px;
+      padding: 0 14px;
+      gap: 34px;
+      align-items: stretch;
+    }
+
+    .workspace-panel .tab-btn {
+      padding: 0 6px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #252b33;
+    }
+
+    .workspace-panel .tab-btn.active {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .workspace-panel .tab-btn.active::after {
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    /* XYZ controller */
+    #tab-xyz {
+      padding: 0;
+      min-height: 620px;
+    }
+
+    .xyz-shot-layout {
+      min-height: 620px;
+      padding: 54px 24px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .xyz-step-selector {
+      width: min(535px, 64vw);
+      height: 66px;
+      margin-bottom: 42px;
+      padding: 4px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid #dfe3e8;
+      border-radius: 999px;
+      background: #f2f3f5;
+    }
+
+    .xyz-step-selector .step-btn {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: #333b46;
+      font-size: 21px;
+      font-weight: 450;
+    }
+
+    .xyz-step-selector .step-btn:hover {
+      background: rgba(255,255,255,.6);
+    }
+
+    .xyz-step-selector .step-btn.active {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: none;
+      font-weight: 600;
+    }
+
+    .xyz-shot-main {
+      width: min(780px, 92%);
+      display: grid;
+      grid-template-columns: 104px minmax(360px, 460px) 104px;
+      gap: 32px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .coordinate-stack,
+    .z-shot-controls {
+      height: 365px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 26px;
+    }
+
+    .coordinate-box,
+    .z-shot-btn {
+      width: 104px;
+      height: 104px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 7px;
+      background: #f4f5f7;
+      color: #303742;
+      font-size: 17px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .coordinate-box {
+      justify-items: start;
+      padding-left: 10px;
+      white-space: nowrap;
+    }
+
+    .coordinate-axis {
+      margin-right: 4px;
+      font-weight: 500;
+    }
+
+    .jog-dial {
+      position: relative;
+      width: min(440px, 42vw);
+      aspect-ratio: 1;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: #f8f8f9;
+      overflow: hidden;
+    }
+
+    .jog-dial::before,
+    .jog-dial::after {
+      position: absolute;
+      inset: 49.7% -8%;
+      height: 2px;
+      z-index: 2;
+      background: #fff;
+      content: "";
+      transform-origin: center;
+      pointer-events: none;
+    }
+
+    .jog-dial::before { transform: rotate(45deg); }
+    .jog-dial::after  { transform: rotate(-45deg); }
+
+    .dial-btn {
+      position: absolute;
+      z-index: 1;
+      border: 0;
+      background: #fafafb;
+      color: #a4abb4;
+      transition: background .15s ease, color .15s ease;
+    }
+
+    .dial-btn:hover {
+      background: #f0f7f3;
+      color: var(--accent);
+    }
+
+    .dial-top {
+      left: 25%;
+      top: 0;
+      width: 50%;
+      height: 50%;
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    .dial-right {
+      right: 0;
+      top: 25%;
+      width: 50%;
+      height: 50%;
+      clip-path: polygon(100% 0, 100% 100%, 0 50%);
+    }
+
+    .dial-bottom {
+      left: 25%;
+      bottom: 0;
+      width: 50%;
+      height: 50%;
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+    }
+
+    .dial-left {
+      left: 0;
+      top: 25%;
+      width: 50%;
+      height: 50%;
+      clip-path: polygon(0 0, 100% 50%, 0 100%);
+    }
+
+    .dial-content {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      font-size: 20px;
+      font-weight: 500;
+      pointer-events: none;
+    }
+
+    .dial-arrow {
+      font-size: 31px;
+      line-height: .8;
+      color: #a7adb5;
+    }
+
+    .dial-top .dial-content {
+      left: 50%;
+      top: 17%;
+      transform: translateX(-50%);
+    }
+
+    .dial-bottom .dial-content {
+      left: 50%;
+      bottom: 15%;
+      transform: translateX(-50%);
+      flex-direction: column-reverse;
+    }
+
+    .dial-left .dial-content {
+      left: 13%;
+      top: 50%;
+      transform: translateY(-50%);
+      flex-direction: row;
+    }
+
+    .dial-right .dial-content {
+      right: 13%;
+      top: 50%;
+      transform: translateY(-50%);
+      flex-direction: row-reverse;
+    }
+
+    .dial-home {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 5;
+      width: 124px;
+      height: 124px;
+      transform: translate(-50%, -50%);
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: #fff;
+      color: #536172;
+      font-size: 44px;
+      box-shadow: 0 0 0 1px rgba(225,228,232,.35);
+    }
+
+    .dial-home:hover,
+    .z-shot-btn:hover {
+      color: var(--accent);
+      background: #f6fbf8;
+    }
+
+    .z-shot-btn {
+      position: relative;
+      padding: 0;
+      color: #9fa6af;
+      font-size: 18px;
+    }
+
+    .z-shot-btn .z-arrow {
+      display: block;
+      font-size: 30px;
+      line-height: .9;
+      margin-bottom: 7px;
+    }
+
+    .z-home-icon {
+      font-size: 39px;
+      color: #536172;
+      line-height: 1;
+    }
+
+    .xyz-all-home {
+      margin-top: 28px;
+      height: 32px;
+      padding: 0 18px;
+      border: 1px solid #e1e4e8;
+      border-radius: 999px;
+      background: #fff;
+      color: #7a838d;
+      font-size: 11px;
+    }
+
+    .xyz-all-home:hover {
+      border-color: #b9e9cf;
+      color: var(--accent);
+    }
+
+    .sr-position-line {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* Local files */
+    #tab-files {
+      padding: 0;
+    }
+
+    .file-shot-topbar {
+      height: 51px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      color: #252c35;
+      font-size: 14px;
+    }
+
+    .file-selected-count {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .file-shot-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .file-shot-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 6px;
+      color: #8c96a1;
+      font-size: 18px;
+    }
+
+    .file-shot-icon:hover {
+      background: #f3f5f7;
+      color: var(--accent);
+    }
+
+    .file-shot-sortbar {
+      min-height: 48px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: minmax(170px, 1fr) 150px 150px 200px;
+      align-items: center;
+      gap: 18px;
+      border-bottom: 1px solid var(--line);
+      color: #222a33;
+      font-size: 13px;
+    }
+
+    .file-select-all {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      width: max-content;
+    }
+
+    .file-select-all input,
+    .file-card-check {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+    }
+
+    .sort-head {
+      color: #2d3540;
+      white-space: nowrap;
+    }
+
+    .sort-mark {
+      margin-left: 5px;
+      color: #9da5ae;
+      font-size: 14px;
+    }
+
+    .file-card-grid {
+      padding: 14px 12px 28px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(340px, 1fr));
+      gap: 14px 16px;
+    }
+
+    .file-card {
+      position: relative;
+      min-width: 0;
+      min-height: 138px;
+      display: grid;
+      grid-template-columns: 145px minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid #dfe3e7;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .file-card-thumb {
+      min-height: 138px;
+      display: grid;
+      place-items: center;
+      border-right: 1px solid #eff1f3;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.7), rgba(255,255,255,0)),
+        #f1f2f4;
+      color: #c5cad0;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-align: center;
+      user-select: none;
+    }
+
+    .file-card-thumb::before {
+      display: block;
+      margin-bottom: 7px;
+      color: #b7bdc4;
+      font-size: 38px;
+      line-height: 1;
+      content: "◇";
+    }
+
+    .file-card-info {
+      min-width: 0;
+      padding: 12px 18px 10px 12px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(126px, auto);
+      grid-template-rows: auto 1fr auto;
+      column-gap: 16px;
+      row-gap: 9px;
+    }
+
+    .file-card-name {
+      grid-column: 1 / -1;
+      min-width: 0;
+      padding-right: 20px;
+      overflow: hidden;
+      color: #28313b;
+      font-size: 13px;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-card-meta {
+      align-self: end;
+      color: #4e5965;
+      font-size: 12px;
+      line-height: 1.75;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .file-card-meta.right {
+      text-align: left;
+    }
+
+    .file-card-check {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .file-empty-wrap {
+      padding: 16px;
+    }
+
+    @media (max-width: 980px) {
+      .xyz-shot-main {
+        grid-template-columns: 84px minmax(310px, 390px) 84px;
+        gap: 20px;
+      }
+
+      .coordinate-box,
+      .z-shot-btn {
+        width: 84px;
+        height: 92px;
+        font-size: 14px;
+      }
+
+      .jog-dial { width: min(390px, 48vw); }
+      .file-shot-sortbar {
+        grid-template-columns: minmax(140px, 1fr) 110px 110px 155px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .workspace-panel .tabs {
+        gap: 18px;
+        padding-inline: 10px;
+      }
+
+      .workspace-panel .tab-btn { font-size: 13px; }
+
+      #tab-xyz { min-height: 540px; }
+
+      .xyz-shot-layout {
+        min-height: 540px;
+        padding: 36px 12px;
+      }
+
+      .xyz-step-selector {
+        width: min(430px, 90vw);
+        height: 54px;
+        margin-bottom: 28px;
+      }
+
+      .xyz-step-selector .step-btn { font-size: 16px; }
+
+      .xyz-shot-main {
+        width: 100%;
+        grid-template-columns: 70px minmax(250px, 1fr) 70px;
+        gap: 12px;
+      }
+
+      .coordinate-stack,
+      .z-shot-controls {
+        height: 300px;
+        gap: 14px;
+      }
+
+      .coordinate-box,
+      .z-shot-btn {
+        width: 70px;
+        height: 76px;
+        padding: 0;
+        font-size: 11px;
+      }
+
+      .coordinate-box { padding-left: 6px; }
+      .jog-dial { width: min(320px, 58vw); }
+      .dial-home { width: 88px; height: 88px; font-size: 34px; }
+      .dial-content { gap: 8px; font-size: 14px; }
+      .dial-arrow { font-size: 23px; }
+
+      .file-shot-sortbar {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .file-shot-sortbar .sort-head {
+        display: none;
+      }
+
+      .file-card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .xyz-shot-layout { padding-inline: 6px; }
+
+      .xyz-shot-main {
+        grid-template-columns: 58px minmax(190px, 1fr) 58px;
+        gap: 7px;
+      }
+
+      .coordinate-stack,
+      .z-shot-controls {
+        height: 250px;
+        gap: 10px;
+      }
+
+      .coordinate-box,
+      .z-shot-btn {
+        width: 58px;
+        height: 64px;
+        font-size: 9px;
+      }
+
+      .jog-dial { width: min(270px, 60vw); }
+      .dial-home { width: 72px; height: 72px; font-size: 28px; }
+      .dial-content { font-size: 11px; }
+      .dial-arrow { font-size: 18px; }
+
+      .file-card {
+        grid-template-columns: 100px minmax(0, 1fr);
+      }
+
+      .file-card-thumb { min-height: 125px; }
+      .file-card-info {
+        padding: 10px;
+        grid-template-columns: 1fr;
+        row-gap: 4px;
+      }
+
+      .file-card-meta.right { text-align: left; }
+    }
+
+  
+    /* Material editor -------------------------------------------------- */
+    .cfs-card {
+      appearance: none;
+      width: 100%;
+      font: inherit;
+      text-align: inherit;
+      cursor: pointer;
+      transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    }
+
+    .cfs-card:hover {
+      border-color: #a9dfc1;
+      box-shadow: 0 4px 14px rgba(20, 95, 57, .08);
+      transform: translateY(-1px);
+    }
+
+    .material-editor-stage {
+      min-height: 610px;
+      padding: 54px 20px 60px;
+      display: grid;
+      place-items: center;
+    }
+
+    .material-editor-card {
+      width: min(735px, 92%);
+      min-height: 480px;
+      padding: 44px 24px 36px;
+      border: 1px solid #d9dde2;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .material-editor-grid {
+      width: min(650px, 100%);
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 155px minmax(280px, 1fr);
+      column-gap: 46px;
+      row-gap: 14px;
+      align-items: center;
+    }
+
+    .material-editor-label {
+      color: #252b33;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .material-editor-control {
+      min-width: 0;
+    }
+
+    .material-editor-select {
+      width: 100%;
+      height: 42px;
+      padding: 0 42px 0 14px;
+      border: 1px solid #cfd4da;
+      border-radius: 7px;
+      outline: none;
+      background: #fff;
+      color: #2a3038;
+      font: 14px/1.2 inherit;
+    }
+
+    .material-editor-select:focus {
+      border-color: #64d99a;
+      box-shadow: 0 0 0 2px rgba(22, 199, 102, .10);
+    }
+
+    .material-editor-readonly {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      color: #28313a;
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .material-color-control {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .material-color-input {
+      width: 38px;
+      height: 34px;
+      padding: 0;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .material-color-input::-webkit-color-swatch-wrapper { padding: 2px; }
+    .material-color-input::-webkit-color-swatch {
+      border: 1px solid #cfd4da;
+      border-radius: 5px;
+    }
+
+    .material-color-hex {
+      width: 86px;
+      color: #59636e;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      text-transform: uppercase;
+    }
+
+    .material-editor-status {
+      grid-column: 1 / -1;
+      min-height: 18px;
+      margin-top: 4px;
+      color: #858e98;
+      font-size: 11px;
+      text-align: right;
+    }
+
+    .material-editor-actions {
+      grid-column: 2;
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 18px;
+    }
+
+    .material-action-btn {
+      min-width: 90px;
+      height: 40px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #fff;
+      font: 600 14px/1 inherit;
+      cursor: pointer;
+    }
+
+    .material-action-btn:hover { filter: brightness(.96); }
+
+    .material-action-btn.secondary {
+      border: 1px solid #d9dde2;
+      background: #fff;
+      color: #4d5762;
+    }
+
+    .material-action-btn.secondary:hover {
+      border-color: #aee6c7;
+      color: var(--accent);
+      filter: none;
+    }
+
+    .material-action-btn:disabled {
+      cursor: wait;
+      opacity: .55;
+    }
+
+    .material-editor-slot {
+      grid-column: 1 / -1;
+      margin-bottom: 10px;
+      color: #7e8791;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) {
+      .material-editor-stage {
+        min-height: 520px;
+        padding: 28px 10px 40px;
+      }
+
+      .material-editor-card {
+        width: 100%;
+        min-height: 0;
+        padding: 28px 18px;
+      }
+
+      .material-editor-grid {
+        grid-template-columns: 105px minmax(0, 1fr);
+        column-gap: 18px;
+        row-gap: 12px;
+      }
+
+      .material-editor-label { font-size: 13px; }
+      .material-editor-select { font-size: 13px; }
+      .material-editor-actions {
+        grid-column: 1 / -1;
+        justify-content: center;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="column left-column">
+      <section class="panel camera-panel">
+        <div class="panel-header">
+          <span class="header-icon">◉</span>
+          <span>摄像头</span>
+          <span class="spacer"></span>
+          <button id="reconnect" class="icon-btn" type="button" title="重新连接">↻</button>
+          <button id="fullscreenCamera" class="icon-btn" type="button" title="全屏">⛶</button>
+          <button id="toggleDebug" class="icon-btn" type="button" aria-expanded="false" title="调试信息">⌁</button>
+        </div>
+        <div id="cameraStage" class="camera-stage">
+          <video id="camera" autoplay muted playsinline></video>
+          <div id="cameraStatus" class="camera-status">
+            <span class="status-dot"></span>
+            <span id="cameraStatusText">正在连接摄像头...</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel print-panel">
+        <div class="panel-header">
+          <span class="header-icon">◆</span>
+          <span>当前打印</span>
+        </div>
+        <div class="print-body">
+          <div class="print-thumb" aria-hidden="true">◇</div>
+          <div class="print-info">
+            <div>
+              <div id="printFile" class="print-file" title="">正在等待打印机数据...</div>
+              <div class="print-meta">
+                <span id="printTime">--:--:-- / --:--:--</span>
+                <span id="printLayer">0 / 0 层</span>
+              </div>
+            </div>
+
+            <div class="print-state-row">
+              <span id="printState" class="print-state" data-state="connecting">正在连接</span>
+            </div>
+
+            <div class="progress-track" aria-hidden="true">
+              <div id="progressBar" class="progress-bar"></div>
+            </div>
+            <div class="progress-row">
+              <span id="printProgress">0%</span>
+              <span id="printEta">预计完成时间：--:--</span>
+            </div>
+
+            <div class="print-actions">
+              <button id="pauseResume" class="small-btn primary" type="button">暂停</button>
+              <button id="stopPrint" class="small-btn danger" type="button">停止</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="column right-column">
+      <section class="panel settings-panel">
+        <div class="panel-header">
+          <span class="header-icon">⚙</span>
+          <span>打印设置</span>
+        </div>
+
+        <div class="settings-body">
+          <div class="control-grid">
+            <div class="control-card">
+              <div class="control-title-row">
+                <span class="control-title">喷嘴温度</span>
+                <span class="tiny-help" title="回车或离开输入框后设置">ⓘ</span>
+              </div>
+              <div class="temperature-row">
+                <div>
+                  <span class="sub-label">当前</span>
+                  <span id="nozzleCurrent" class="current-temp">-- °C</span>
+                </div>
+                <span></span>
+                <div>
+                  <span class="sub-label">目标</span>
+                  <div class="temp-input-wrap">
+                    <input id="nozzleTargetInput" class="temp-input" type="number" min="0" max="350" step="1" value="0">
+                    <span class="unit">°C</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-card">
+              <div class="control-title-row">
+                <span class="control-title">热床温度</span>
+                <span class="tiny-help" title="回车或离开输入框后设置">ⓘ</span>
+              </div>
+              <div class="temperature-row">
+                <div>
+                  <span class="sub-label">当前</span>
+                  <span id="bedCurrent" class="current-temp">-- °C</span>
+                </div>
+                <span></span>
+                <div>
+                  <span class="sub-label">目标</span>
+                  <div class="temp-input-wrap">
+                    <input id="bedTargetInput" class="temp-input" type="number" min="0" max="120" step="1" value="0">
+                    <span class="unit">°C</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-card">
+              <div class="control-title-row">
+                <span class="control-title">腔体温度</span>
+                <span class="tiny-help" title="K2 使用 M141 控制腔温">ⓘ</span>
+              </div>
+              <div class="temperature-row">
+                <div>
+                  <span class="sub-label">当前</span>
+                  <span id="chamberCurrent" class="current-temp">-- °C</span>
+                </div>
+                <span></span>
+                <div>
+                  <span class="sub-label">目标</span>
+                  <div class="temp-input-wrap">
+                    <input id="chamberTargetInput" class="temp-input" type="number" min="0" max="60" step="1" value="0">
+                    <span class="unit">°C</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="control-card">
+              <div class="control-title-row">
+                <span class="control-title">LED</span>
+                <label class="switch" title="机舱照明">
+                  <input id="lightSwitch" type="checkbox">
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+              <div class="led-icon">♧</div>
+            </div>
+
+            <div class="control-card fan">
+              <div class="control-title-row">
+                <span class="control-title">模型风扇</span>
+                <label class="switch">
+                  <input id="modelFanSwitch" type="checkbox">
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+              <div class="fan-row">
+                <span class="fan-symbol">◉</span>
+                <input id="modelFanRange" class="fan-range" type="range" min="0" max="100" step="1" value="0">
+                <span id="modelFanPct" class="fan-pct">0%</span>
+              </div>
+            </div>
+
+            <div class="control-card fan">
+              <div class="control-title-row">
+                <span class="control-title">机箱风扇</span>
+                <label class="switch">
+                  <input id="caseFanSwitch" type="checkbox">
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+              <div class="fan-row">
+                <span class="fan-symbol">◉</span>
+                <input id="caseFanRange" class="fan-range" type="range" min="0" max="100" step="1" value="0">
+                <span id="caseFanPct" class="fan-pct">0%</span>
+              </div>
+            </div>
+
+            <div class="control-card fan">
+              <div class="control-title-row">
+                <span class="control-title">辅助风扇</span>
+                <label class="switch">
+                  <input id="auxFanSwitch" type="checkbox">
+                  <span class="switch-track"></span>
+                </label>
+              </div>
+              <div class="fan-row">
+                <span class="fan-symbol">◉</span>
+                <input id="auxFanRange" class="fan-range" type="range" min="0" max="100" step="1" value="0">
+                <span id="auxFanPct" class="fan-pct">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="speed-block">
+            <div class="speed-title">打印速度</div>
+            <div class="speed-segments">
+              <button class="speed-btn" data-speed="quiet" type="button">静音</button>
+              <button class="speed-btn" data-speed="50" type="button">平稳 50%</button>
+              <button class="speed-btn active" data-speed="100" type="button">标准 100%</button>
+              <button class="speed-btn" data-speed="125" type="button">极速 125%</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel workspace-panel">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" data-tab="consumables" type="button">耗材设置</button>
+          <button class="tab-btn" data-tab="xyz" type="button">XYZ控制</button>
+          <button class="tab-btn" data-tab="files" type="button">本地文件</button>
+          <button class="tab-btn" data-tab="history" type="button">历史记录</button>
+          <button class="tab-btn" data-tab="timelapse" type="button">延时摄影</button>
+        </div>
+
+        <div class="tab-content">
+          <div id="tab-consumables" class="tab-pane active">
+            <div class="cfs-toolbar">
+              <div>
+                <div class="section-hint">CFS / 外置料架状态</div>
+              </div>
+              <button id="refreshCfs" class="small-btn" type="button">刷新耗材</button>
+            </div>
+            <div id="cfsContent" class="empty-state">
+              <div><strong>正在读取耗材信息</strong>如果打印机连接了 CFS，会在这里显示各料槽状态。</div>
+            </div>
+          </div>
+
+          <div id="tab-xyz" class="tab-pane">
+            <div class="xyz-shot-layout">
+              <div id="positionText" class="sr-position-line">当前位置：X -- Y -- Z --</div>
+
+              <div class="xyz-step-selector" aria-label="移动步进">
+                <button class="step-btn" data-step="1" type="button">1 mm</button>
+                <button class="step-btn active" data-step="10" type="button">10 mm</button>
+                <button class="step-btn" data-step="100" type="button">100 mm</button>
+              </div>
+
+              <div class="xyz-shot-main">
+                <div class="coordinate-stack" aria-label="当前位置">
+                  <div class="coordinate-box"><span><span class="coordinate-axis">X:</span><span id="xPositionValue">--</span></span></div>
+                  <div class="coordinate-box"><span><span class="coordinate-axis">Y:</span><span id="yPositionValue">--</span></span></div>
+                  <div class="coordinate-box"><span><span class="coordinate-axis">Z:</span><span id="zPositionValue">--</span></span></div>
+                </div>
+
+                <div class="jog-dial" aria-label="XY移动控制">
+                  <button class="dial-btn dial-top" data-jog="Y+" type="button" title="Y+">
+                    <span class="dial-content"><span class="dial-arrow">▲</span><span>Y+</span></span>
+                  </button>
+
+                  <button class="dial-btn dial-right" data-jog="X+" type="button" title="X+">
+                    <span class="dial-content"><span class="dial-arrow">▶</span><span>X+</span></span>
+                  </button>
+
+                  <button class="dial-btn dial-bottom" data-jog="Y-" type="button" title="Y-">
+                    <span class="dial-content"><span class="dial-arrow">▼</span><span>Y-</span></span>
+                  </button>
+
+                  <button class="dial-btn dial-left" data-jog="X-" type="button" title="X-">
+                    <span class="dial-content"><span class="dial-arrow">◀</span><span>X-</span></span>
+                  </button>
+
+                  <button id="homeXY" class="dial-home" type="button" title="XY归零" aria-label="XY归零">⌂</button>
+                </div>
+
+                <div class="z-shot-controls" aria-label="Z轴控制">
+                  <button class="z-shot-btn" data-z="+" type="button" title="Z+">
+                    <span><span class="z-arrow">▲</span>Z</span>
+                  </button>
+                  <button id="homeZ" class="z-shot-btn" type="button" title="Z归零" aria-label="Z归零">
+                    <span class="z-home-icon">⌂</span>
+                  </button>
+                  <button class="z-shot-btn" data-z="-" type="button" title="Z-">
+                    <span>Z<span class="z-arrow" style="margin:7px 0 0;">▼</span></span>
+                  </button>
+                </div>
+              </div>
+
+              <button id="homeAll" class="xyz-all-home" type="button">全部归零 G28</button>
+            </div>
+          </div>
+
+          <div id="tab-files" class="tab-pane">
+            <div class="file-shot-topbar">
+              <div class="file-selected-count">已选文件： <strong id="fileSelectedCount">0</strong> / <strong id="fileTotalCount">0</strong></div>
+              <div class="file-shot-actions">
+                <button id="refreshFiles" class="file-shot-icon" type="button" title="刷新文件" aria-label="刷新文件">↻</button>
+              </div>
+            </div>
+
+            <div class="file-shot-sortbar">
+              <label class="file-select-all">
+                <span>全选</span>
+                <input id="selectAllFiles" type="checkbox" aria-label="全选本地文件">
+              </label>
+              <span class="sort-head">文件大小 <span class="sort-mark">⇅</span></span>
+              <span class="sort-head">层高 <span class="sort-mark">⇅</span></span>
+              <span class="sort-head">创建时间 <span class="sort-mark">⇅</span></span>
+            </div>
+
+            <div id="filesContent" class="empty-state">
+              <div><strong>尚未读取文件列表</strong>打开此标签页后会自动读取本地 G-code。</div>
+            </div>
+          </div>
+
+          <div id="tab-history" class="tab-pane">
+            <div class="list-toolbar">
+              <span class="section-hint">最近打印任务</span>
+              <button id="refreshHistory" class="small-btn" type="button">刷新记录</button>
+            </div>
+            <div id="historyContent" class="empty-state">
+              <div><strong>尚未读取历史记录</strong>点击“刷新记录”获取最近打印任务。</div>
+            </div>
+          </div>
+
+          <div id="tab-timelapse" class="tab-pane">
+            <div class="timelapse-head">
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#46505b;">延时摄影</div>
+                <div style="margin-top:3px;font-size:10px;color:#8b949f;">控制 K2 原厂延时摄影并查看视频列表</div>
+              </div>
+              <label class="switch">
+                <input id="timelapseSwitch" type="checkbox">
+                <span class="switch-track"></span>
+              </label>
+            </div>
+            <div class="list-toolbar">
+              <span class="section-hint">延时摄影文件</span>
+              <button id="refreshTimelapse" class="small-btn" type="button">刷新视频</button>
+            </div>
+            <div id="timelapseContent" class="empty-state">
+              <div><strong>尚未读取延时摄影列表</strong>点击“刷新视频”获取列表。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <pre id="debug" class="debug" hidden></pre>
+  <div id="toast" class="toast"></div>
+
+  <script>
+    "use strict";
+
+    // CrealityPrint 官方 Creality K2（0.4mm 喷嘴）默认耗材预设。
+    // 本机 reqMaterials 返回的数据优先；以下官方数据作为内置补充。
+    const OFFICIAL_K2_MATERIAL_PROFILES = [{"vendor":"Generic","type":"PLA-CF","shortName":"Generic PLA-CF","name":"Generic PLA-CF @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.05,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Generic","type":"PLA","shortName":"Generic PLA","name":"Generic PLA @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Generic","type":"PETG","shortName":"Generic PETG","name":"Generic PETG @Creality K2 0.4 nozzle","minTemp":220,"maxTemp":270,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Generic","type":"PLA","shortName":"Generic PLA-Silk","name":"Generic PLA-Silk @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"PETG","shortName":"Hyper PETG","name":"Hyper PETG @Creality K2 0.4 nozzle","minTemp":220,"maxTemp":270,"pressure":0.05,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"PLA","shortName":"CR-Silk","name":"CR-Silk @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"PLA","shortName":"ENDER FAST PLA","name":"ENDER FAST PLA @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"PLA-CF","shortName":"Hyper PLA-CF","name":"Hyper PLA-CF @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"PLA","shortName":"Hyper PLA","name":"Hyper PLA @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"ABS","shortName":"Hyper ABS","name":"Hyper ABS @Creality K2 0.4 nozzle","minTemp":230,"maxTemp":260,"pressure":0.03,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"TPU","shortName":"HP-TPU","name":"HP-TPU @Creality K2 0.4 nozzle","minTemp":200,"maxTemp":220,"pressure":0.4,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"PLA","shortName":"CR-PLA","name":"CR-PLA @Creality K2 0.4 nozzle","minTemp":190,"maxTemp":240,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"PETG","shortName":"CR-PETG","name":"CR-PETG @Creality K2 0.4 nozzle","minTemp":220,"maxTemp":270,"pressure":0.07,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Creality","type":"ABS","shortName":"CR-ABS","name":"CR-ABS @Creality K2 0.4 nozzle","minTemp":230,"maxTemp":260,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Generic","type":"ASA","shortName":"Generic ASA","name":"Generic ASA @Creality K2 0.4 nozzle","minTemp":240,"maxTemp":280,"pressure":0.04,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""},{"vendor":"Generic","type":"ABS","shortName":"Generic ABS","name":"Generic ABS @Creality K2 0.4 nozzle","minTemp":240,"maxTemp":280,"pressure":0.06,"official":true,"source":"CrealityPrint 官方 K2 0.4mm","rfid":""}];
+
+    /* DOM ---------------------------------------------------------------- */
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => Array.from(document.querySelectorAll(selector));
+
+    const video = $("#camera");
+    const cameraStage = $("#cameraStage");
+    const cameraStatus = $("#cameraStatus");
+    const cameraStatusText = $("#cameraStatusText");
+    const debugBox = $("#debug");
+    const toastBox = $("#toast");
+
+    const reconnectButton = $("#reconnect");
+    const fullscreenCameraButton = $("#fullscreenCamera");
+    const toggleDebugButton = $("#toggleDebug");
+
+    const printStateElement = $("#printState");
+    const printProgressElement = $("#printProgress");
+    const printFileElement = $("#printFile");
+    const progressBar = $("#progressBar");
+    const printLayerElement = $("#printLayer");
+    const printTimeElement = $("#printTime");
+    const printEtaElement = $("#printEta");
+    const pauseResumeButton = $("#pauseResume");
+    const stopPrintButton = $("#stopPrint");
+
+    const nozzleCurrentElement = $("#nozzleCurrent");
+    const bedCurrentElement = $("#bedCurrent");
+    const chamberCurrentElement = $("#chamberCurrent");
+    const nozzleTargetInput = $("#nozzleTargetInput");
+    const bedTargetInput = $("#bedTargetInput");
+    const chamberTargetInput = $("#chamberTargetInput");
+
+    const lightSwitch = $("#lightSwitch");
+    const modelFanSwitch = $("#modelFanSwitch");
+    const caseFanSwitch = $("#caseFanSwitch");
+    const auxFanSwitch = $("#auxFanSwitch");
+    const modelFanRange = $("#modelFanRange");
+    const caseFanRange = $("#caseFanRange");
+    const auxFanRange = $("#auxFanRange");
+    const modelFanPctElement = $("#modelFanPct");
+    const caseFanPctElement = $("#caseFanPct");
+    const auxFanPctElement = $("#auxFanPct");
+    const timelapseSwitch = $("#timelapseSwitch");
+    const positionText = $("#positionText");
+
+    const printerHost = location.hostname;
+    const printerAddress = printerHost.includes(":") ? `[${printerHost}]` : printerHost;
+
+    /* State -------------------------------------------------------------- */
+    let peerConnection = null;
+    let printerSocket = null;
+    let attemptId = 0;
+    let telemetryReady = false;
+    let activeJogStep = 10;
+    let quietUiSelected = false;
+    let toastTimer = null;
+    let cfsData = null;
+    let materialProfiles = [];
+    let activeMaterialEditor = null;
+
+    const logLines = [];
+    const printerState = {};
+    const rememberedFan = { 0: 100, 1: 100, 2: 100 };
+
+    /* Utilities ---------------------------------------------------------- */
+    function log(message) {
+      const line = `${new Date().toLocaleTimeString()}  ${message}`;
+      logLines.push(line);
+      if (logLines.length > 180) logLines.splice(0, logLines.length - 180);
+      debugBox.textContent = logLines.join("\n");
+      console.log(`[创想三维 K2 控制台] ${message}`);
+    }
+
+    function showToast(message) {
+      toastBox.textContent = message;
+      toastBox.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastBox.classList.remove("show"), 2200);
+    }
+
+    function numeric(value, fallback = 0) {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, numeric(value, min)));
+    }
+
+    function formatDuration(value) {
+      if (value === undefined || value === null || !Number.isFinite(Number(value))) return "--:--:--";
+      const seconds = Math.max(0, Math.round(Number(value)));
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const remainder = seconds % 60;
+      return [hours, minutes, remainder].map(part => String(part).padStart(2, "0")).join(":");
+    }
+
+    function formatTemperature(value) {
+      if (!Number.isFinite(Number(value))) return "-- °C";
+      return `${Math.round(Number(value))} °C`;
+    }
+
+    function formatBytes(value) {
+      const bytes = Number(value);
+      if (!Number.isFinite(bytes) || bytes < 0) return "";
+      const units = ["B", "KB", "MB", "GB"];
+      let n = bytes;
+      let i = 0;
+      while (n >= 1024 && i < units.length - 1) {
+        n /= 1024;
+        i++;
+      }
+      return `${n >= 10 || i === 0 ? n.toFixed(0) : n.toFixed(1)} ${units[i]}`;
+    }
+
+    function formatDate(value) {
+      if (value === undefined || value === null || value === "") return "";
+      let d;
+      if (typeof value === "number" || /^\d+(\.\d+)?$/.test(String(value))) {
+        let n = Number(value);
+        if (n < 100000000000) n *= 1000;
+        d = new Date(n);
+      } else {
+        d = new Date(value);
+      }
+      return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleString();
+    }
+
+    function getFileName(path) {
+      if (!path) return "当前无打印任务";
+      return String(path).split(/[\\/]/).pop().replace(/\.gcode$/i, "");
+    }
+
+    function updateInputUnlessEditing(input, value) {
+      if (document.activeElement === input) return;
+      const n = numeric(value, 0);
+      if (String(input.value) !== String(Math.round(n))) input.value = String(Math.round(n));
+    }
+
+    function extractFirstArray(value, depth = 0) {
+      if (depth > 5 || value == null) return null;
+      if (Array.isArray(value)) return value;
+      if (typeof value !== "object") return null;
+      for (const candidate of Object.values(value)) {
+        const found = extractFirstArray(candidate, depth + 1);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function findObjectValue(obj, names) {
+      if (!obj || typeof obj !== "object") return undefined;
+      for (const name of names) {
+        if (obj[name] !== undefined) return obj[name];
+      }
+      return undefined;
+    }
+
+    function getFriendlyState() {
+      if (!telemetryReady) return { label: "正在连接", key: "connecting" };
+      const errorCode = numeric(printerState.err?.errcode, 0);
+      const rawState = numeric(printerState.state, -1);
+      const progress = numeric(printerState.printProgress ?? printerState.dProgress, 0);
+      const hasFile = Boolean(printerState.printFileName);
+
+      if (errorCode) return { label: "错误", key: "error" };
+      if (hasFile && progress >= 100) return { label: "已完成", key: "completed" };
+      if (hasFile && rawState === 5) return { label: "已暂停", key: "paused" };
+      if (hasFile && rawState === 4) return { label: "已停止", key: "stopped" };
+      if (hasFile && rawState === 1) return { label: "打印中", key: "printing" };
+      if (hasFile && rawState === 0) return { label: "处理中", key: "processing" };
+      return { label: "空闲", key: "idle" };
+    }
+
+    function parsePosition(text) {
+      const source = String(text || "");
+      const result = {};
+      for (const axis of ["X", "Y", "Z"]) {
+        const match = source.match(new RegExp(`${axis}:\\s*(-?\\d+(?:\\.\\d+)?)`, "i"));
+        result[axis] = match ? Number(match[1]) : null;
+      }
+      return result;
+    }
+
+    /* Rendering ---------------------------------------------------------- */
+    function renderPrinterStatus() {
+      const state = getFriendlyState();
+      printStateElement.textContent = state.label;
+      printStateElement.dataset.state = state.key;
+
+      const progress = clamp(printerState.printProgress ?? printerState.dProgress, 0, 100);
+      const fileName = getFileName(printerState.printFileName);
+      const layer = printerState.layer ?? 0;
+      const totalLayer = printerState.TotalLayer ?? 0;
+      const elapsed = numeric(printerState.printJobTime, 0);
+      const remaining = numeric(printerState.printLeftTime, 0);
+
+      printProgressElement.textContent = `${Math.round(progress)}%`;
+      progressBar.style.width = `${progress}%`;
+      printFileElement.textContent = telemetryReady ? fileName : "正在等待打印机数据...";
+      printFileElement.title = telemetryReady ? fileName : "";
+      printLayerElement.textContent = `${layer} / ${totalLayer} 层`;
+      printTimeElement.textContent = `${formatDuration(elapsed)} / ${formatDuration(remaining)}`;
+
+      if (remaining > 0) {
+        const eta = new Date(Date.now() + remaining * 1000);
+        printEtaElement.textContent = `预计完成时间：${eta.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      } else {
+        printEtaElement.textContent = "预计完成时间：--:--";
+      }
+
+      pauseResumeButton.textContent = state.key === "paused" ? "继续" : "暂停";
+      pauseResumeButton.disabled = !["printing", "paused"].includes(state.key);
+      stopPrintButton.disabled = !["printing", "paused", "processing"].includes(state.key);
+
+      nozzleCurrentElement.textContent = formatTemperature(printerState.nozzleTemp);
+      bedCurrentElement.textContent = formatTemperature(printerState.bedTemp0);
+      chamberCurrentElement.textContent = formatTemperature(printerState.boxTemp);
+
+      nozzleTargetInput.max = String(Math.max(1, numeric(printerState.maxNozzleTemp, 350)));
+      bedTargetInput.max = String(Math.max(1, numeric(printerState.maxBedTemp, 120)));
+      chamberTargetInput.max = String(Math.max(1, numeric(printerState.maxBoxTemp, 60)));
+
+      updateInputUnlessEditing(nozzleTargetInput, printerState.targetNozzleTemp);
+      updateInputUnlessEditing(bedTargetInput, printerState.targetBedTemp0);
+      updateInputUnlessEditing(chamberTargetInput, printerState.targetBoxTemp);
+
+      lightSwitch.checked = numeric(printerState.lightSw, 0) === 1;
+      timelapseSwitch.checked = numeric(printerState.videoElapse, 0) === 1;
+
+      updateFanUi(0, printerState.modelFanPct);
+      updateFanUi(1, printerState.caseFanPct);
+      updateFanUi(2, printerState.auxiliaryFanPct);
+
+      const pct = Math.round(numeric(printerState.curFeedratePct, 100));
+      if (!quietUiSelected) {
+        const closest = [50, 100, 125].reduce((a, b) =>
+          Math.abs(b - pct) < Math.abs(a - pct) ? b : a
+        );
+        $$(".speed-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.speed === String(closest)));
+      }
+
+      const pos = parsePosition(printerState.curPosition);
+      const xText = pos.X == null ? "--" : pos.X.toFixed(2);
+      const yText = pos.Y == null ? "--" : pos.Y.toFixed(2);
+      const zText = pos.Z == null ? "--" : pos.Z.toFixed(2);
+      positionText.innerHTML =
+        `当前位置：X ${xText} &nbsp; Y ${yText} &nbsp; Z ${zText}`;
+      const xPositionValue = $("#xPositionValue");
+      const yPositionValue = $("#yPositionValue");
+      const zPositionValue = $("#zPositionValue");
+      if (xPositionValue) xPositionValue.textContent = xText;
+      if (yPositionValue) yPositionValue.textContent = yText;
+      if (zPositionValue) zPositionValue.textContent = zText;
+    }
+
+    function updateFanUi(index, value) {
+      const pct = Math.round(clamp(value, 0, 100));
+      const map = {
+        0: [modelFanRange, modelFanSwitch, modelFanPctElement],
+        1: [caseFanRange, caseFanSwitch, caseFanPctElement],
+        2: [auxFanRange, auxFanSwitch, auxFanPctElement]
+      };
+      const [range, toggle, label] = map[index];
+      if (document.activeElement !== range) range.value = String(pct);
+      toggle.checked = pct > 0;
+      label.textContent = `${pct}%`;
+      if (pct > 0) rememberedFan[index] = pct;
+    }
+
+    function updatePrinterState(update) {
+      if (update && Object.keys(update).length) telemetryReady = true;
+      Object.assign(printerState, update || {});
+      renderPrinterStatus();
+    }
+
+
+    function normaliseK2Color(value, fallback = "#9ca4ad") {
+      let color = String(value || "").trim();
+      color = color.replace(/^#0(?=[0-9a-f]{6}$)/i, "#");
+      if (/^#[0-9a-f]{6}$/i.test(color)) return color.toLowerCase();
+      if (/^[0-9a-f]{6}$/i.test(color)) return `#${color.toLowerCase()}`;
+      return fallback;
+    }
+
+    function toK2Color(value) {
+      const color = normaliseK2Color(value, "#9ca4ad");
+      return `#0${color.slice(1).toLowerCase()}`;
+    }
+
+    function normaliseMaterialProfile(raw, fallbackName = "") {
+      if (typeof raw === "string") {
+        return {
+          vendor: "",
+          type: "",
+          name: raw,
+          rfid: "",
+          minTemp: null,
+          maxTemp: null,
+          pressure: null
+        };
+      }
+      if (!raw || typeof raw !== "object") return null;
+
+      const pick = (...keys) => {
+        for (const key of keys) {
+          const value = raw[key];
+          if (Array.isArray(value)) {
+            if (value.length) return value[0];
+          } else if (value !== undefined && value !== null && value !== "") {
+            return value;
+          }
+        }
+        return "";
+      };
+
+      const profile = {
+        vendor: String(pick("vendor", "filament_vendor", "brand", "manufacturer") || "").trim(),
+        type: String(pick("type", "filament_type", "materialType") || "").trim(),
+        name: String(pick("name", "filament_name", "presetName", "profileName", "displayName") || fallbackName || "").trim(),
+        rfid: String(pick("rfid", "rfidCode", "materialCode", "code") || "").trim(),
+        minTemp: pick("minTemp", "nozzle_temperature_range_low", "nozzleTempMin", "temperatureMin"),
+        maxTemp: pick("maxTemp", "nozzle_temperature_range_high", "nozzleTempMax", "temperatureMax"),
+        pressure: pick("pressure", "pressure_advance", "pressureAdvance"),
+        color: pick("color", "filament_colour", "filamentColor"),
+        shortName: String(pick("shortName", "materialName") || "").trim(),
+        official: Boolean(raw.official),
+        source: String(raw.source || "").trim()
+      };
+
+      if (!profile.name && !profile.vendor && !profile.type) return null;
+      return profile;
+    }
+
+    function collectMaterialProfiles(node, output = [], depth = 0) {
+      if (depth > 8 || node === null || node === undefined) return output;
+
+      if (Array.isArray(node)) {
+        for (const item of node) {
+          const profile = normaliseMaterialProfile(item);
+          if (profile) output.push(profile);
+          if (item && typeof item === "object") collectMaterialProfiles(item, output, depth + 1);
+        }
+        return output;
+      }
+
+      if (typeof node !== "object") return output;
+
+      const profile = normaliseMaterialProfile(node);
+      if (profile) output.push(profile);
+
+      for (const [key, value] of Object.entries(node)) {
+        if (key === "boxsInfo" || key === "materialBoxs") continue;
+        if (value && typeof value === "object") collectMaterialProfiles(value, output, depth + 1);
+      }
+
+      return output;
+    }
+
+    function dedupeMaterialProfiles(profiles) {
+      const result = [];
+      const indexByKey = new Map();
+
+      for (const raw of profiles) {
+        const profile = normaliseMaterialProfile(raw);
+        if (!profile) continue;
+
+        const key = [
+          profile.vendor.toLowerCase(),
+          profile.type.toLowerCase(),
+          profile.name.toLowerCase(),
+          String(profile.rfid || "")
+        ].join("|");
+
+        if (!indexByKey.has(key)) {
+          indexByKey.set(key, result.length);
+          result.push({ ...profile });
+          continue;
+        }
+
+        // Merge duplicate presets instead of discarding them.
+        // Printer-side data keeps priority for identity fields, while missing
+        // numeric parameters can be supplemented by the embedded Creality
+        // official K2 preset.
+        const existing = result[indexByKey.get(key)];
+
+        const isUsefulNumber = value => {
+          const n = Number(value);
+          return Number.isFinite(n) && n > 0;
+        };
+
+        if (!isUsefulNumber(existing.minTemp) && isUsefulNumber(profile.minTemp)) {
+          existing.minTemp = profile.minTemp;
+        }
+        if (!isUsefulNumber(existing.maxTemp) && isUsefulNumber(profile.maxTemp)) {
+          existing.maxTemp = profile.maxTemp;
+        }
+
+        const existingPressure = Number(existing.pressure);
+        const incomingPressure = Number(profile.pressure);
+        if ((!Number.isFinite(existingPressure) || existing.pressure === "" || existing.pressure == null)
+            && Number.isFinite(incomingPressure)) {
+          existing.pressure = profile.pressure;
+        }
+
+        if (!existing.color && profile.color) existing.color = profile.color;
+        if (!existing.shortName && profile.shortName) existing.shortName = profile.shortName;
+        if (!existing.source && profile.source) existing.source = profile.source;
+        if (profile.official) existing.official = true;
+      }
+
+      return result;
+    }
+
+    function cfsProfilesFallback() {
+      const boxes = cfsData?.materialBoxs;
+      if (!Array.isArray(boxes)) return [];
+      const profiles = [];
+      for (const box of boxes) {
+        for (const material of (Array.isArray(box.materials) ? box.materials : [])) {
+          const profile = normaliseMaterialProfile(material);
+          if (profile) profiles.push(profile);
+        }
+      }
+      return profiles;
+    }
+
+    function findCfsMaterial(boxId, materialId) {
+      const boxes = cfsData?.materialBoxs;
+      if (!Array.isArray(boxes)) return null;
+      const box = boxes.find(item => numeric(item.id, -1) === numeric(boxId, -2));
+      if (!box || !Array.isArray(box.materials)) return null;
+      const material = box.materials.find(item => numeric(item.id, -1) === numeric(materialId, -2));
+      return material ? { box, material } : null;
+    }
+
+    function currentMaterialProfiles() {
+      // Priority:
+      // 1) printer-side reqMaterials presets
+      // 2) CrealityPrint official K2 presets embedded below
+      // 3) current CFS slot data as final fallback
+      return dedupeMaterialProfiles([
+        ...materialProfiles,
+        ...OFFICIAL_K2_MATERIAL_PROFILES,
+        ...cfsProfilesFallback()
+      ]);
+    }
+
+    function setSelectOptions(select, values, currentValue, placeholder = "请选择") {
+      const clean = [...new Set(values.map(value => String(value || "").trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "zh-CN", { sensitivity: "base" }));
+
+      const current = String(currentValue || "").trim();
+      if (current && !clean.includes(current)) clean.unshift(current);
+
+      select.innerHTML = "";
+      if (!clean.length) {
+        const option = document.createElement("option");
+        option.value = current;
+        option.textContent = current || placeholder;
+        select.appendChild(option);
+        return;
+      }
+
+      for (const value of clean) {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      }
+
+      if (current && clean.includes(current)) select.value = current;
+    }
+
+    function resolveMaterialProfileParameters(profile) {
+      if (!profile) return profile;
+
+      const resolved = { ...profile };
+      const useful = value => {
+        const n = Number(value);
+        return Number.isFinite(n) && n > 0;
+      };
+
+      const official = OFFICIAL_K2_MATERIAL_PROFILES.find(item =>
+        item.vendor === resolved.vendor &&
+        item.type === resolved.type &&
+        (
+          item.name === resolved.name ||
+          item.shortName === resolved.name ||
+          resolved.name === item.shortName ||
+          String(resolved.name || "").startsWith(`${item.shortName} @`)
+        )
+      ) || OFFICIAL_K2_MATERIAL_PROFILES.find(item =>
+        item.vendor === resolved.vendor &&
+        item.type === resolved.type &&
+        (
+          String(resolved.name || "").toLowerCase().includes(String(item.shortName || "").toLowerCase()) ||
+          String(item.name || "").toLowerCase().includes(String(resolved.name || "").toLowerCase())
+        )
+      );
+
+      if (official) {
+        if (!useful(resolved.minTemp) && useful(official.minTemp)) resolved.minTemp = official.minTemp;
+        if (!useful(resolved.maxTemp) && useful(official.maxTemp)) resolved.maxTemp = official.maxTemp;
+
+        const currentPressure = Number(resolved.pressure);
+        if ((!Number.isFinite(currentPressure) || resolved.pressure === "" || resolved.pressure == null)
+            && Number.isFinite(Number(official.pressure))) {
+          resolved.pressure = official.pressure;
+        }
+
+        resolved.official = resolved.official || true;
+        resolved.source = resolved.source || official.source;
+        resolved.shortName = resolved.shortName || official.shortName;
+      }
+
+      return resolved;
+    }
+
+    function profileTempText(profile) {
+      const resolved = resolveMaterialProfileParameters(profile);
+      const min = Number(resolved?.minTemp);
+      const max = Number(resolved?.maxTemp);
+      const minOk = Number.isFinite(min) && min > 0;
+      const maxOk = Number.isFinite(max) && max > 0;
+      if (minOk && maxOk) return `${Math.round(min)} ~ ${Math.round(max)} °C`;
+      if (maxOk) return `${Math.round(max)} °C`;
+      if (minOk) return `${Math.round(min)} °C`;
+      return "--";
+    }
+
+    function profilePressureText(profile) {
+      const resolved = resolveMaterialProfileParameters(profile);
+      const value = Number(resolved?.pressure);
+      if (!Number.isFinite(value)) return "--";
+      return String(Math.round(value * 10000) / 10000);
+    }
+
+    function findSelectedMaterialProfile() {
+      if (!activeMaterialEditor) return null;
+      const vendor = $("#materialVendorSelect")?.value || "";
+      const type = $("#materialTypeSelect")?.value || "";
+      const name = $("#materialNameSelect")?.value || "";
+
+      const profiles = currentMaterialProfiles();
+      const matched = profiles.find(profile =>
+        profile.vendor === vendor &&
+        profile.type === type &&
+        profile.name === name
+      ) || profiles.find(profile =>
+        profile.type === type && profile.name === name
+      ) || profiles.find(profile =>
+        profile.name === name
+      ) || activeMaterialEditor.original;
+
+      return resolveMaterialProfileParameters(matched);
+    }
+
+    function updateMaterialReadOnly(profile) {
+      const resolved = resolveMaterialProfileParameters(profile);
+      const temp = $("#materialNozzleTemp");
+      const pressure = $("#materialPressureAdvance");
+      if (temp) {
+        temp.textContent = profileTempText(resolved);
+        temp.title = resolved?.official ? "来自 CrealityPrint 官方 K2 预设（只读）" : "来自打印机耗材配置（只读）";
+      }
+      if (pressure) {
+        pressure.textContent = profilePressureText(resolved);
+        pressure.title = resolved?.official ? "来自 CrealityPrint 官方 K2 预设（只读）" : "来自打印机耗材配置（只读）";
+      }
+    }
+
+    function rebuildMaterialEditorOptions(preferred = {}) {
+      if (!activeMaterialEditor) return;
+
+      const vendorSelect = $("#materialVendorSelect");
+      const typeSelect = $("#materialTypeSelect");
+      const nameSelect = $("#materialNameSelect");
+      if (!vendorSelect || !typeSelect || !nameSelect) return;
+
+      const profiles = currentMaterialProfiles();
+      const original = activeMaterialEditor.original;
+
+      const wantedVendor = preferred.vendor ?? vendorSelect.value ?? original.vendor ?? "";
+      setSelectOptions(
+        vendorSelect,
+        profiles.map(profile => profile.vendor),
+        wantedVendor,
+        "未设置品牌"
+      );
+
+      const vendor = vendorSelect.value;
+      const vendorProfiles = profiles.filter(profile => !vendor || profile.vendor === vendor);
+
+      const wantedType = preferred.type ?? typeSelect.value ?? original.type ?? "";
+      setSelectOptions(
+        typeSelect,
+        vendorProfiles.map(profile => profile.type),
+        wantedType,
+        "未设置类型"
+      );
+
+      const type = typeSelect.value;
+      const typedProfiles = vendorProfiles.filter(profile => !type || profile.type === type);
+
+      const wantedName = preferred.name ?? nameSelect.value ?? original.name ?? "";
+      setSelectOptions(
+        nameSelect,
+        typedProfiles.map(profile => profile.name),
+        wantedName,
+        "未找到已保存配置"
+      );
+
+      updateMaterialReadOnly(findSelectedMaterialProfile());
+
+      const status = $("#materialProfileStatus");
+      if (status) {
+        const savedCount = materialProfiles.length;
+        const officialCount = OFFICIAL_K2_MATERIAL_PROFILES.length;
+        status.textContent = savedCount
+          ? `本机配置 ${savedCount} 项 · K2 官方预设 ${officialCount} 项`
+          : `K2 官方预设 ${officialCount} 项 · 正在读取打印机本机配置…`;
+      }
+    }
+
+    function renderMaterialEditor() {
+      if (!activeMaterialEditor) return;
+
+      const { boxId, materialId, original } = activeMaterialEditor;
+      const boxName = numeric(boxId, 0) === 0 ? "外置料架" : `CFS ${boxId}`;
+      const slotName = numeric(boxId, 0) === 0
+        ? boxName
+        : `${boxName} · 槽位 ${numeric(materialId, 0) + 1}`;
+      const color = normaliseK2Color(original.color, "#9ca4ad");
+
+      const target = $("#cfsContent");
+      target.className = "";
+      target.innerHTML = `
+        <div class="material-editor-stage">
+          <div class="material-editor-card">
+            <div class="material-editor-grid">
+              <div class="material-editor-slot">${escapeHtml(slotName)}</div>
+
+              <label class="material-editor-label" for="materialVendorSelect">品牌</label>
+              <div class="material-editor-control">
+                <select id="materialVendorSelect" class="material-editor-select"></select>
+              </div>
+
+              <label class="material-editor-label" for="materialTypeSelect">类型</label>
+              <div class="material-editor-control">
+                <select id="materialTypeSelect" class="material-editor-select"></select>
+              </div>
+
+              <label class="material-editor-label" for="materialNameSelect">名称</label>
+              <div class="material-editor-control">
+                <select id="materialNameSelect" class="material-editor-select"></select>
+              </div>
+
+              <label class="material-editor-label" for="materialColorInput">颜色</label>
+              <div class="material-color-control">
+                <input id="materialColorInput" class="material-color-input" type="color" value="${escapeHtml(color)}">
+                <span id="materialColorHex" class="material-color-hex">${escapeHtml(color)}</span>
+              </div>
+
+              <div class="material-editor-label">喷嘴温度</div>
+              <div id="materialNozzleTemp" class="material-editor-readonly">--</div>
+
+              <div class="material-editor-label">压力提前</div>
+              <div id="materialPressureAdvance" class="material-editor-readonly">--</div>
+
+              <div id="materialProfileStatus" class="material-editor-status"></div>
+
+              <div class="material-editor-actions">
+                <button id="materialBackBtn" class="material-action-btn secondary" type="button">返回</button>
+                <button id="materialResetBtn" class="material-action-btn" type="button">重置</button>
+                <button id="materialSaveBtn" class="material-action-btn" type="button">确定</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      rebuildMaterialEditorOptions({
+        vendor: original.vendor,
+        type: original.type,
+        name: original.name
+      });
+
+      const vendorSelect = $("#materialVendorSelect");
+      const typeSelect = $("#materialTypeSelect");
+      const nameSelect = $("#materialNameSelect");
+      const colorInput = $("#materialColorInput");
+      const colorHex = $("#materialColorHex");
+
+      vendorSelect.addEventListener("change", () => {
+        rebuildMaterialEditorOptions({
+          vendor: vendorSelect.value,
+          type: "",
+          name: ""
+        });
+      });
+
+      typeSelect.addEventListener("change", () => {
+        rebuildMaterialEditorOptions({
+          vendor: vendorSelect.value,
+          type: typeSelect.value,
+          name: ""
+        });
+      });
+
+      nameSelect.addEventListener("change", () => {
+        const profile = findSelectedMaterialProfile();
+        updateMaterialReadOnly(profile);
+      });
+
+      colorInput.addEventListener("input", () => {
+        colorHex.textContent = colorInput.value.toUpperCase();
+      });
+
+      $("#materialBackBtn").addEventListener("click", () => {
+        activeMaterialEditor = null;
+        renderCfs(cfsData || {});
+      });
+
+      $("#materialResetBtn").addEventListener("click", () => {
+        colorInput.value = normaliseK2Color(original.color, "#9ca4ad");
+        colorHex.textContent = colorInput.value.toUpperCase();
+        rebuildMaterialEditorOptions({
+          vendor: original.vendor,
+          type: original.type,
+          name: original.name
+        });
+        showToast("已恢复当前料槽参数");
+      });
+
+      $("#materialSaveBtn").addEventListener("click", saveMaterialEditor);
+
+      // Ask K2 for material profiles saved on the printer.
+      sendGet({ reqMaterials: 1 }, true);
+    }
+
+    function openMaterialEditor(boxId, materialId) {
+      const found = findCfsMaterial(boxId, materialId);
+      if (!found) {
+        showToast("未找到该料槽数据");
+        return;
+      }
+
+      activeMaterialEditor = {
+        boxId: numeric(boxId, 0),
+        materialId: numeric(materialId, 0),
+        original: { ...found.material }
+      };
+      renderMaterialEditor();
+    }
+
+    function saveMaterialEditor() {
+      if (!activeMaterialEditor) return;
+
+      const profile = findSelectedMaterialProfile() || activeMaterialEditor.original;
+      const vendor = $("#materialVendorSelect")?.value || profile.vendor || "";
+      const type = $("#materialTypeSelect")?.value || profile.type || "";
+      const selectedProfileName = $("#materialNameSelect")?.value || profile.name || "";
+      const name = profile?.official && profile.shortName
+        ? profile.shortName
+        : selectedProfileName;
+      const color = $("#materialColorInput")?.value || normaliseK2Color(activeMaterialEditor.original.color);
+
+      const minTemp = Number(profile.minTemp ?? activeMaterialEditor.original.minTemp);
+      const maxTemp = Number(profile.maxTemp ?? activeMaterialEditor.original.maxTemp);
+      const pressure = Number(profile.pressure ?? activeMaterialEditor.original.pressure);
+      const rfid = String(profile.rfid || activeMaterialEditor.original.rfid || "0");
+
+      const payload = {
+        boxId: activeMaterialEditor.boxId,
+        id: activeMaterialEditor.materialId,
+        rfid,
+        type,
+        vendor,
+        name,
+        color: toK2Color(color),
+        minTemp: Number.isFinite(minTemp) ? minTemp : 0,
+        maxTemp: Number.isFinite(maxTemp) ? maxTemp : 0
+      };
+
+      if (Number.isFinite(pressure)) payload.pressure = String(pressure);
+
+      const saveButton = $("#materialSaveBtn");
+      if (saveButton) saveButton.disabled = true;
+
+      if (!sendSet({ modifyMaterial: payload })) {
+        if (saveButton) saveButton.disabled = false;
+        return;
+      }
+
+      // Optimistic local update so returning to the list immediately reflects
+      // the user's choice; the following boxsInfo request re-syncs real state.
+      const found = findCfsMaterial(payload.boxId, payload.id);
+      if (found) {
+        Object.assign(found.material, {
+          vendor: payload.vendor,
+          type: payload.type,
+          name: payload.name,
+          color: payload.color,
+          rfid: payload.rfid,
+          minTemp: payload.minTemp,
+          maxTemp: payload.maxTemp,
+          pressure: payload.pressure ?? found.material.pressure
+        });
+      }
+
+      log(`耗材设置 → ${payload.boxId}:${payload.id} ${payload.vendor} ${payload.type} ${payload.name}`);
+      showToast("耗材设置已发送到打印机");
+
+      setTimeout(() => {
+        activeMaterialEditor = null;
+        renderCfs(cfsData || {});
+        sendGet({ boxsInfo: 1 }, true);
+      }, 350);
+    }
+
+    function renderCfs(info) {
+      const boxInfo = info?.boxsInfo ?? info;
+      const boxes = boxInfo?.materialBoxs;
+      const target = $("#cfsContent");
+
+      if (activeMaterialEditor) {
+        // Keep editor visible while background telemetry refreshes CFS state.
+        return;
+      }
+
+      if (!Array.isArray(boxes) || !boxes.length) {
+        target.className = "empty-state";
+        target.innerHTML = `<div><strong>未检测到 CFS 数据</strong>如果未安装 CFS，这是正常状态；外置料架信息也可能由固件稍后推送。</div>`;
+        return;
+      }
+
+      const cards = [];
+      for (const box of boxes) {
+        const materials = Array.isArray(box.materials) ? box.materials : [];
+        const boxName = numeric(box.id, 0) === 0 ? "外置料架" : `CFS ${box.id}`;
+
+        for (const material of materials) {
+          const selected = numeric(material.selected, 0) === 1;
+          const percent = clamp(material.percent ?? 0, 0, 100);
+          const type = material.type || "未设置";
+          const vendor = material.vendor || "";
+          const name = material.name || "";
+          const slot = numeric(box.id, 0) === 0
+            ? boxName
+            : `${boxName} · 槽位 ${numeric(material.id, 0) + 1}`;
+          const safeColor = normaliseK2Color(material.color, "#9ca4ad");
+
+          cards.push(`
+            <button class="cfs-card ${selected ? "active-slot" : ""}"
+                    type="button"
+                    data-box-id="${numeric(box.id, 0)}"
+                    data-material-id="${numeric(material.id, 0)}"
+                    title="点击编辑 ${escapeHtml(slot)}">
+              <div class="spool" style="border-color:${safeColor}" title="${escapeHtml(type)}"></div>
+              <div class="slot-title">${escapeHtml(slot)}</div>
+              <div class="slot-meta">
+                ${escapeHtml(type)}${vendor ? ` · ${escapeHtml(vendor)}` : ""}
+                ${name ? `<br>${escapeHtml(name)}` : ""}
+                <br>剩余 ${Math.round(percent)}%${selected ? " · 正在使用" : ""}
+              </div>
+            </button>
+          `);
+        }
+      }
+
+      target.className = "cfs-grid";
+      target.innerHTML = cards.length ? cards.join("") :
+        `<div class="empty-state"><div><strong>没有可显示的料槽</strong>已收到 CFS 数据，但当前没有材料信息。</div></div>`;
+
+      target.querySelectorAll(".cfs-card[data-box-id][data-material-id]").forEach(card => {
+        card.addEventListener("click", () => {
+          openMaterialEditor(card.dataset.boxId, card.dataset.materialId);
+        });
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatFilamentLength(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return "--";
+      // Moonraker metadata normally reports filament_total in millimetres.
+      if (n >= 100) return `${(n / 1000).toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}m`;
+      return `${n.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}m`;
+    }
+
+    function updateFileSelectionUi() {
+      const checks = Array.from(document.querySelectorAll("#filesContent .file-card-check"));
+      const selected = checks.filter(check => check.checked).length;
+      const selectedCount = $("#fileSelectedCount");
+      const totalCount = $("#fileTotalCount");
+      const selectAll = $("#selectAllFiles");
+
+      if (selectedCount) selectedCount.textContent = String(selected);
+      if (totalCount) totalCount.textContent = String(checks.length);
+
+      if (selectAll) {
+        selectAll.checked = checks.length > 0 && selected === checks.length;
+        selectAll.indeterminate = selected > 0 && selected < checks.length;
+      }
+    }
+
+    function renderFileList(items) {
+      const target = $("#filesContent");
+      const totalCount = $("#fileTotalCount");
+      const selectedCount = $("#fileSelectedCount");
+      const selectAll = $("#selectAllFiles");
+
+      if (!Array.isArray(items) || !items.length) {
+        if (totalCount) totalCount.textContent = "0";
+        if (selectedCount) selectedCount.textContent = "0";
+        if (selectAll) {
+          selectAll.checked = false;
+          selectAll.indeterminate = false;
+        }
+        target.className = "empty-state";
+        target.innerHTML = `<div><strong>没有找到本地文件</strong>或者当前固件没有返回文件列表。</div>`;
+        return;
+      }
+
+      const files = items.slice(0, 100);
+      target.className = "file-card-grid";
+      target.innerHTML = files.map((item, index) => {
+        const path = typeof item === "string" ? item :
+          findObjectValue(item, ["path", "filename", "name", "file", "gcode"]) ?? JSON.stringify(item);
+
+        const fullName = String(path || "").split(/[\\/]/).pop() || "未命名.gcode";
+        const size = typeof item === "object" ? findObjectValue(item, ["size", "fileSize"]) : "";
+        const modified = typeof item === "object"
+          ? findObjectValue(item, ["modified", "mtime", "time", "date", "createTime", "created"])
+          : "";
+
+        const layerHeight = typeof item === "object"
+          ? findObjectValue(item, ["layer_height", "layerHeight", "layerHeightMm", "layer"])
+          : "";
+
+        const filament = typeof item === "object"
+          ? findObjectValue(item, ["filament_total", "filamentTotal", "filament_length", "filamentLength", "materialLength"])
+          : "";
+
+        let layerText = "--";
+        if (layerHeight !== undefined && layerHeight !== null && layerHeight !== "") {
+          const layerNumber = Number(layerHeight);
+          layerText = Number.isFinite(layerNumber)
+            ? `${layerNumber.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}mm`
+            : String(layerHeight);
+        }
+
+        return `
+          <article class="file-card" data-file-index="${index}">
+            <div class="file-card-thumb"><span>GCODE</span></div>
+            <div class="file-card-info">
+              <div class="file-card-name" title="${escapeHtml(fullName)}">${escapeHtml(fullName)}</div>
+              <div class="file-card-meta">
+                <div>层高: ${escapeHtml(layerText)}</div>
+                <div>创建时间: ${escapeHtml(formatDate(modified))}</div>
+              </div>
+              <div class="file-card-meta right">
+                <div>耗材长度: ${escapeHtml(formatFilamentLength(filament))}</div>
+                <div>文件大小: ${escapeHtml(formatBytes(size))}</div>
+              </div>
+            </div>
+            <input class="file-card-check" type="checkbox" aria-label="选择 ${escapeHtml(fullName)}">
+          </article>`;
+      }).join("");
+
+      target.querySelectorAll(".file-card-check").forEach(check => {
+        check.addEventListener("change", updateFileSelectionUi);
+      });
+
+      updateFileSelectionUi();
+    }
+
+    function renderHistory(items) {
+      const target = $("#historyContent");
+      if (!Array.isArray(items) || !items.length) {
+        target.className = "empty-state";
+        target.innerHTML = `<div><strong>没有找到历史记录</strong>或者当前固件没有返回历史任务。</div>`;
+        return;
+      }
+
+      target.className = "data-list";
+      target.innerHTML = items.slice(0, 80).map(item => {
+        const file = typeof item === "string" ? item :
+          findObjectValue(item, ["filename", "name", "file", "path", "printFileName"]) ?? "打印任务";
+        const status = typeof item === "object" ?
+          findObjectValue(item, ["status", "state", "result", "printStatus"]) ?? "" : "";
+        const start = typeof item === "object" ?
+          findObjectValue(item, ["start_time", "startTime", "time", "date", "printStartTime"]) ?? "" : "";
+        const duration = typeof item === "object" ?
+          findObjectValue(item, ["print_duration", "duration", "printJobTime"]) : "";
+        return `
+          <div class="data-row">
+            <div class="data-main">
+              <div class="data-title">${escapeHtml(getFileName(file))}</div>
+              <div class="data-sub">${escapeHtml(String(status))}</div>
+            </div>
+            <div class="data-side">${escapeHtml(formatDate(start))}${duration !== undefined && duration !== "" ? `<br>${escapeHtml(formatDuration(duration))}` : ""}</div>
+          </div>`;
+      }).join("");
+    }
+
+    function renderTimelapse(items) {
+      const target = $("#timelapseContent");
+      if (!Array.isArray(items) || !items.length) {
+        target.className = "empty-state";
+        target.innerHTML = `<div><strong>没有找到延时摄影文件</strong>开启延时摄影并完成打印后，视频会出现在这里。</div>`;
+        return;
+      }
+
+      target.className = "data-list";
+      target.innerHTML = items.slice(0, 100).map(item => {
+        const name = typeof item === "string" ? item :
+          findObjectValue(item, ["name", "filename", "file", "path", "videoName"]) ?? "延时摄影";
+        const time = typeof item === "object" ?
+          findObjectValue(item, ["time", "date", "createTime", "modified"]) ?? "" : "";
+        return `
+          <div class="data-row">
+            <div class="data-main">
+              <div class="data-title">${escapeHtml(getFileName(name))}</div>
+              <div class="data-sub">${escapeHtml(String(name))}</div>
+            </div>
+            <div class="data-side">${escapeHtml(formatDate(time))}</div>
+          </div>`;
+      }).join("");
+    }
+
+    function handleSpecialMessage(message) {
+      if (message?.boxsInfo) {
+        cfsData = message.boxsInfo;
+        renderCfs(message.boxsInfo);
+      }
+
+      const materialKeys = [
+        "reqMaterials",
+        "materials",
+        "materialList",
+        "materialsList",
+        "materialPresets",
+        "filamentProfiles"
+      ];
+
+      for (const key of materialKeys) {
+        if (message?.[key] !== undefined) {
+          const profiles = dedupeMaterialProfiles(collectMaterialProfiles(message[key]));
+          if (profiles.length) {
+            materialProfiles = profiles;
+            log(`已读取打印机耗材配置：${profiles.length} 项。`);
+            if (activeMaterialEditor) rebuildMaterialEditorOptions();
+          }
+          break;
+        }
+      }
+
+      const fileKeys = ["gcodeFile", "gcodeFiles", "gcodeFileList", "fileList"];
+      for (const key of fileKeys) {
+        if (message?.[key] !== undefined) {
+          renderFileList(extractFirstArray(message[key]) || (Array.isArray(message[key]) ? message[key] : []));
+          break;
+        }
+      }
+
+      const historyKeys = ["history", "historyList", "printHistory"];
+      for (const key of historyKeys) {
+        if (message?.[key] !== undefined) {
+          renderHistory(extractFirstArray(message[key]) || (Array.isArray(message[key]) ? message[key] : []));
+          break;
+        }
+      }
+
+      const videoKeys = ["elapseVideoList", "videoList", "elapseVideos", "videoFiles"];
+      for (const key of videoKeys) {
+        if (message?.[key] !== undefined) {
+          renderTimelapse(extractFirstArray(message[key]) || (Array.isArray(message[key]) ? message[key] : []));
+          break;
+        }
+      }
+    }
+
+    /* Printer commands --------------------------------------------------- */
+    function socketReady() {
+      return printerSocket && printerSocket.readyState === WebSocket.OPEN;
+    }
+
+    function sendSet(params, quiet = false) {
+      if (!socketReady()) {
+        const msg = "打印机控制通道尚未连接。";
+        if (!quiet) showToast(msg);
+        log(msg);
+        return false;
+      }
+      try {
+        printerSocket.send(JSON.stringify({ method: "set", params }));
+        return true;
+      } catch (error) {
+        log(`发送控制命令失败：${error.message}`);
+        if (!quiet) showToast("发送控制命令失败");
+        return false;
+      }
+    }
+
+    function sendGet(params, quiet = false) {
+      if (!socketReady()) {
+        if (!quiet) showToast("打印机控制通道尚未连接");
+        return false;
+      }
+      try {
+        printerSocket.send(JSON.stringify({ method: "get", params }));
+        return true;
+      } catch (error) {
+        log(`发送查询命令失败：${error.message}`);
+        return false;
+      }
+    }
+
+    function sendGcode(command, quiet = false) {
+      const ok = sendSet({ gcodeCmd: command }, quiet);
+      if (ok) log(`G-code → ${String(command).replace(/\n/g, " | ")}`);
+      return ok;
+    }
+
+    function sendGcodeSequence(commands) {
+      const list = commands.filter(Boolean);
+      list.forEach((command, index) => {
+        setTimeout(() => sendGcode(command, true), index * 90);
+      });
+    }
+
+    function setLight(on) {
+      const value = on ? 1 : 0;
+      if (sendSet({ lightSw: value })) {
+        printerState.lightSw = value;
+        renderPrinterStatus();
+        showToast(`LED灯已${on ? "打开" : "关闭"}`);
+      } else {
+        lightSwitch.checked = !on;
+      }
+    }
+
+    function setTemperature(kind, rawValue) {
+      const configs = {
+        nozzle: { label: "喷嘴", input: nozzleTargetInput, stateKey: "targetNozzleTemp", maxKey: "maxNozzleTemp", fallbackMax: 350, code: "M104" },
+        bed: { label: "热床", input: bedTargetInput, stateKey: "targetBedTemp0", maxKey: "maxBedTemp", fallbackMax: 120, code: "M140" },
+        chamber: { label: "腔体", input: chamberTargetInput, stateKey: "targetBoxTemp", maxKey: "maxBoxTemp", fallbackMax: 60, code: "M141" }
+      };
+      const cfg = configs[kind];
+      const max = Math.max(1, numeric(printerState[cfg.maxKey], cfg.fallbackMax));
+      const value = Math.round(clamp(rawValue, 0, max));
+      cfg.input.value = String(value);
+
+      if (sendGcode(`${cfg.code} S${value}`)) {
+        printerState[cfg.stateKey] = value;
+        renderPrinterStatus();
+        showToast(`${cfg.label}目标温度：${value} °C`);
+      }
+    }
+
+    function setFan(index, rawPct) {
+      const pct = Math.round(clamp(rawPct, 0, 100));
+      const s = Math.round(pct * 255 / 100);
+      const key = index === 0 ? "modelFanPct" : index === 1 ? "caseFanPct" : "auxiliaryFanPct";
+
+      if (sendGcode(`M106 P${index} S${s}`)) {
+        printerState[key] = pct;
+        if (pct > 0) rememberedFan[index] = pct;
+        renderPrinterStatus();
+        showToast(`${["模型", "机箱", "辅助"][index]}风扇：${pct}%`);
+      }
+    }
+
+    function setPrintSpeed(mode) {
+      quietUiSelected = mode === "quiet";
+      $$(".speed-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.speed === String(mode)));
+
+      if (mode === "quiet") {
+        if (sendGcode("Qmode")) showToast("已切换静音模式");
+        return;
+      }
+
+      const pct = Number(mode);
+      if (!Number.isFinite(pct)) return;
+      sendGcodeSequence(["Qmode_exit", `M220 S${pct}`]);
+      printerState.curFeedratePct = pct;
+      showToast(`打印速度：${pct}%`);
+    }
+
+    function jog(axis, amount) {
+      const feed = axis === "Z" ? 600 : 6000;
+      sendGcodeSequence(["G91", `G1 ${axis}${amount} F${feed}`, "G90"]);
+      showToast(`${axis} ${amount > 0 ? "+" : ""}${amount} mm`);
+    }
+
+    /* Files / history / CFS --------------------------------------------- */
+    async function fetchJson(path) {
+      const response = await fetch(path, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    }
+
+    async function refreshFiles() {
+      const target = $("#filesContent");
+      target.className = "empty-state";
+      target.innerHTML = `<div><strong>正在读取本地文件...</strong></div>`;
+      try {
+        const payload = await fetchJson("/server/files/list?root=gcodes");
+        const items = Array.isArray(payload?.result) ? payload.result : extractFirstArray(payload?.result ?? payload);
+        if (!items) throw new Error("未找到文件数组");
+        renderFileList(items);
+        log(`Moonraker 文件列表：${items.length} 项。`);
+      } catch (error) {
+        log(`Moonraker 文件接口不可用，改用 K2 WebSocket：${error.message}`);
+        target.innerHTML = `<div><strong>正在通过 K2 WebSocket 请求文件...</strong></div>`;
+        if (!sendGet({ reqGcodeFile: 1 }, true)) {
+          target.innerHTML = `<div><strong>文件列表读取失败</strong>控制通道尚未连接。</div>`;
+        }
+      }
+    }
+
+    async function refreshHistory() {
+      const target = $("#historyContent");
+      target.className = "empty-state";
+      target.innerHTML = `<div><strong>正在读取历史记录...</strong></div>`;
+      try {
+        const payload = await fetchJson("/server/history/list?limit=50");
+        const jobs = payload?.result?.jobs ?? payload?.result;
+        const items = Array.isArray(jobs) ? jobs : extractFirstArray(jobs);
+        if (!items) throw new Error("未找到历史数组");
+        renderHistory(items);
+        log(`Moonraker 历史记录：${items.length} 项。`);
+      } catch (error) {
+        log(`Moonraker 历史接口不可用，改用 K2 WebSocket：${error.message}`);
+        target.innerHTML = `<div><strong>正在通过 K2 WebSocket 请求历史记录...</strong></div>`;
+        if (!sendGet({ reqHistory: 1 }, true)) {
+          target.innerHTML = `<div><strong>历史记录读取失败</strong>控制通道尚未连接。</div>`;
+        }
+      }
+    }
+
+    function refreshCfs() {
+      activeMaterialEditor = null;
+      $("#cfsContent").className = "empty-state";
+      $("#cfsContent").innerHTML = `<div><strong>正在读取耗材信息...</strong></div>`;
+      if (!sendGet({ boxsInfo: 1, reqMaterials: 1 }, true)) {
+        $("#cfsContent").innerHTML = `<div><strong>耗材信息读取失败</strong>控制通道尚未连接。</div>`;
+      }
+    }
+
+    function refreshTimelapse() {
+      $("#timelapseContent").className = "empty-state";
+      $("#timelapseContent").innerHTML = `<div><strong>正在读取延时摄影列表...</strong></div>`;
+      if (!sendGet({ reqElapseVideoList: 1 }, true)) {
+        $("#timelapseContent").innerHTML = `<div><strong>延时摄影列表读取失败</strong>控制通道尚未连接。</div>`;
+      }
+    }
+
+    /* WebRTC ------------------------------------------------------------- */
+    function waitForIce(pc, timeoutMs = 8000) {
+      if (pc.iceGatheringState === "complete") return Promise.resolve();
+      return new Promise(resolve => {
+        const timeout = setTimeout(resolve, timeoutMs);
+        pc.addEventListener("icegatheringstatechange", () => {
+          if (pc.iceGatheringState === "complete") {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+      });
+    }
+
+    function getPrinterSession(currentAttempt, timeoutMs = 7000) {
+      return new Promise((resolve, reject) => {
+        const socket = new WebSocket(`ws://${printerAddress}:9999`);
+        const session = { features: [], token: "" };
+        let settled = false;
+        printerSocket = socket;
+
+        const fail = message => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          socket.close();
+          reject(new Error(message));
+        };
+
+        const timeout = setTimeout(
+          () => fail("打印机未提供视频令牌。"),
+          timeoutMs
+        );
+
+        socket.addEventListener("open", () => {
+          if (currentAttempt !== attemptId) return fail("连接已取消。");
+          log("控制通道已连接，正在请求视频令牌...");
+          socket.send(JSON.stringify({
+            method: "get",
+            params: {
+              getToken: 1,
+              ReqPrinterPara: 1,
+              boxsInfo: 1,
+              reqMaterials: 1
+            }
+          }));
+        });
+
+        socket.addEventListener("message", event => {
+          if (event.data === "ok") return;
+          if (currentAttempt !== attemptId) return fail("连接已取消。");
+
+          try {
+            const message = JSON.parse(event.data);
+            handleSpecialMessage(message);
+            const { videoToken, ...telemetry } = message;
+            updatePrinterState(telemetry);
+
+            if (Array.isArray(message.features)) session.features = message.features;
+            if (message.videoToken && !settled) {
+              settled = true;
+              clearTimeout(timeout);
+              session.token = message.videoToken.trim();
+              resolve(session);
+            }
+          } catch (error) {
+            log(`收到无法解析的打印机消息：${error.message}`);
+          }
+        });
+
+        socket.addEventListener("error", () => fail(`无法连接到 ${printerHost}:9999。`));
+        socket.addEventListener("close", () => {
+          if (!settled) fail("打印机关闭了控制连接。");
+          else log("打印机控制通道已关闭。");
+        });
+      });
+    }
+
+    function filterCrealitySdp(sdp) {
+      try {
+        const lines = sdp.split("\r\n");
+        const prefix = [];
+        const suffix = [];
+        const codecGroups = [];
+
+        for (let index = 0; index < lines.length; index++) {
+          const line = lines[index];
+          if (line.includes("a=rtpmap:")) {
+            const group = [];
+            for (;;) {
+              group.push(lines[index]);
+              if (index + 1 === lines.length || lines[index + 1].includes("a=rtpmap:")) {
+                codecGroups.push(group);
+                break;
+              }
+              index++;
+            }
+          }
+          if (codecGroups.length === 0) prefix.push(line);
+        }
+
+        const remove = [];
+        for (let index = 0; index < codecGroups.length; index++) {
+          if (index === codecGroups.length - 1) continue;
+          let discard = true;
+
+          for (const line of codecGroups[index]) {
+            if (line.includes("a=rtpmap:")) {
+              const payload = parseInt(line.split(" ")[0].split(":")[1], 10);
+              if (payload < 96 || payload > 127) break;
+            }
+            if (/H264/i.test(line)) {
+              discard = false;
+              break;
+            }
+          }
+
+          if (discard) remove.push(index);
+        }
+
+        for (let index = remove.length - 1; index >= 0; index--) {
+          codecGroups.splice(remove[index], 1);
+        }
+
+        if (codecGroups.length) {
+          const last = codecGroups[codecGroups.length - 1];
+          const payload = parseInt(last[0].split(" ")[0].split(":")[1], 10);
+          const codecLines = [];
+
+          for (const line of last) {
+            if (line.includes(`:${payload} `)) codecLines.push(line);
+            else suffix.push(line);
+          }
+
+          const valid = codecLines.some(line => /H264/i.test(line))
+            && payload >= 96
+            && payload <= 127;
+          if (valid) codecGroups[codecGroups.length - 1] = codecLines;
+          else codecGroups.splice(codecGroups.length - 1, 1);
+        }
+
+        if (!codecGroups.length) return sdp;
+        return [...prefix, ...codecGroups[0], ...suffix].join("\r\n");
+      } catch (error) {
+        log(`无法过滤 SDP：${error.message}`);
+        return sdp;
+      }
+    }
+
+    function makeCandidatesNumeric(sdp) {
+      let replacements = 0;
+      const result = sdp.split("\r\n").map(line => {
+        if (!line.startsWith("a=candidate:")) return line;
+        const fields = line.split(" ");
+        if (fields[4] && fields[4].endsWith(".local")) {
+          fields[4] = "192.0.2.1";
+          replacements++;
+        }
+        return fields.join(" ");
+      }).join("\r\n");
+
+      log(`已处理 ${replacements} 个 WebRTC 候选地址。`);
+      return result;
+    }
+
+    function closeConnections() {
+      attemptId++;
+
+      const oldPeer = peerConnection;
+      peerConnection = null;
+      if (oldPeer) oldPeer.close();
+
+      const oldSocket = printerSocket;
+      printerSocket = null;
+      if (oldSocket) oldSocket.close();
+
+      video.srcObject = null;
+    }
+
+    async function connect() {
+      if (!/^https?:$/.test(location.protocol) || !printerHost) {
+        throw new Error("请将此文件放入 Fluidd，并通过 http://打印机IP:4408/camera.html 打开。");
+      }
+
+      closeConnections();
+      const currentAttempt = attemptId;
+      logLines.length = 0;
+      debugBox.textContent = "";
+      for (const key of Object.keys(printerState)) delete printerState[key];
+      telemetryReady = false;
+      renderPrinterStatus();
+
+      cameraStatus.classList.remove("ready");
+      cameraStatusText.textContent = "正在连接摄像头...";
+      log(`正在连接 ${printerHost}...`);
+
+      const session = await getPrinterSession(currentAttempt);
+      if (currentAttempt !== attemptId) return;
+
+      const encryptedProtocol = session.features.includes("videoInfo.videoEncryption");
+      log(`正在使用${encryptedProtocol ? "令牌保护" : "旧版"} WebRTC 协议。`);
+
+      const pc = new RTCPeerConnection({ iceServers: [] });
+      peerConnection = pc;
+
+      pc.addEventListener("connectionstatechange", () => {
+        if (pc !== peerConnection) return;
+        const labels = {
+          new: "新建",
+          connecting: "连接中",
+          connected: "已连接",
+          disconnected: "已断开",
+          failed: "失败",
+          closed: "已关闭"
+        };
+        log(`连接状态：${labels[pc.connectionState] || pc.connectionState}。`);
+
+        if (pc.connectionState === "failed") {
+          cameraStatus.classList.remove("ready");
+          cameraStatusText.textContent = "摄像头连接失败";
+          debugBox.hidden = false;
+          toggleDebugButton.classList.add("active");
+        }
+      });
+
+      pc.addEventListener("iceconnectionstatechange", () => {
+        if (pc !== peerConnection) return;
+        const labels = {
+          new: "新建",
+          checking: "检查中",
+          connected: "已连接",
+          completed: "已完成",
+          failed: "失败",
+          disconnected: "已断开",
+          closed: "已关闭"
+        };
+        log(`ICE 状态：${labels[pc.iceConnectionState] || pc.iceConnectionState}。`);
+      });
+
+      pc.addEventListener("track", event => {
+        if (pc !== peerConnection || event.track.kind !== "video") return;
+        video.srcObject = event.streams[0] || new MediaStream([event.track]);
+        video.play().catch(error => {
+          log(`浏览器未能开始播放：${error.message}`);
+          debugBox.hidden = false;
+        });
+      });
+
+      const transceiver = pc.addTransceiver("video", { direction: "sendrecv" });
+      const h264 = RTCRtpReceiver.getCapabilities("video").codecs
+        .filter(codec => codec.mimeType.toLowerCase() === "video/h264");
+
+      if (!h264.length) {
+        throw new Error("当前浏览器不支持 WebRTC 的 H.264 解码。");
+      }
+      if (typeof transceiver.setCodecPreferences === "function") {
+        transceiver.setCodecPreferences(h264);
+      }
+
+      await pc.setLocalDescription(await pc.createOffer());
+      await waitForIce(pc);
+      if (currentAttempt !== attemptId) return;
+
+      const request = {
+        type: "offer",
+        sdp: filterCrealitySdp(makeCandidatesNumeric(pc.localDescription.sdp))
+      };
+      if (encryptedProtocol) request.token = session.token;
+
+      const url = encryptedProtocol
+        ? `http://${printerAddress}/call/webrtc_local`
+        : `http://${printerAddress}:8000/call/webrtc_local`;
+
+      log("正在请求摄像头视频流...");
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "plain/text" },
+        body: btoa(JSON.stringify(request))
+      });
+
+      const responseText = (await response.text()).trim();
+
+      if (!response.ok) throw new Error(`打印机返回 HTTP ${response.status}。`);
+      if (!responseText || responseText === "{}") {
+        throw new Error("打印机未返回 WebRTC 应答。");
+      }
+
+      let answer;
+      try {
+        answer = JSON.parse(atob(responseText));
+      } catch {
+        throw new Error("打印机返回了无效的视频响应。");
+      }
+
+      await pc.setRemoteDescription(new RTCSessionDescription(answer));
+      log("WebRTC 协商完成，正在等待视频画面...");
+    }
+
+    async function start() {
+      reconnectButton.disabled = true;
+      try {
+        await connect();
+      } catch (error) {
+        log(`${error.name}: ${error.message}`);
+        cameraStatus.classList.remove("ready");
+        cameraStatusText.textContent = "连接失败，点击右上角重试";
+        debugBox.hidden = false;
+        toggleDebugButton.classList.add("active");
+        console.error(error);
+      } finally {
+        reconnectButton.disabled = false;
+      }
+    }
+
+    /* Event bindings ----------------------------------------------------- */
+    video.addEventListener("playing", () => {
+      cameraStatus.classList.add("ready");
+      cameraStatusText.textContent = "已连接";
+      log(`实时视频：${video.videoWidth}×${video.videoHeight}。`);
+    });
+
+    reconnectButton.addEventListener("click", start);
+
+    fullscreenCameraButton.addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement) await cameraStage.requestFullscreen();
+        else await document.exitFullscreen();
+      } catch (error) {
+        showToast("当前浏览器无法进入全屏");
+      }
+    });
+
+    toggleDebugButton.addEventListener("click", () => {
+      debugBox.hidden = !debugBox.hidden;
+      const open = !debugBox.hidden;
+      toggleDebugButton.classList.toggle("active", open);
+      toggleDebugButton.setAttribute("aria-expanded", String(open));
+    });
+
+    lightSwitch.addEventListener("change", () => setLight(lightSwitch.checked));
+
+    function bindTemperature(input, kind) {
+      input.addEventListener("change", () => setTemperature(kind, input.value));
+      input.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          input.blur();
+        }
+      });
+    }
+
+    bindTemperature(nozzleTargetInput, "nozzle");
+    bindTemperature(bedTargetInput, "bed");
+    bindTemperature(chamberTargetInput, "chamber");
+
+    const fanControls = [
+      [0, modelFanRange, modelFanSwitch],
+      [1, caseFanRange, caseFanSwitch],
+      [2, auxFanRange, auxFanSwitch]
+    ];
+
+    for (const [index, range, toggle] of fanControls) {
+      range.addEventListener("input", () => {
+        const label = index === 0 ? modelFanPctElement : index === 1 ? caseFanPctElement : auxFanPctElement;
+        label.textContent = `${range.value}%`;
+        toggle.checked = Number(range.value) > 0;
+      });
+      range.addEventListener("change", () => setFan(index, range.value));
+      toggle.addEventListener("change", () => {
+        setFan(index, toggle.checked ? rememberedFan[index] || 100 : 0);
+      });
+    }
+
+    $$(".speed-btn").forEach(btn => {
+      btn.addEventListener("click", () => setPrintSpeed(btn.dataset.speed));
+    });
+
+    pauseResumeButton.addEventListener("click", () => {
+      const state = getFriendlyState().key;
+      if (state === "paused") {
+        sendGcode("RESUME");
+        showToast("已发送继续打印命令");
+      } else if (state === "printing") {
+        sendGcode("PAUSE");
+        showToast("已发送暂停打印命令");
+      }
+    });
+
+    stopPrintButton.addEventListener("click", () => {
+      if (!confirm("确定要停止当前打印吗？")) return;
+      sendGcode("CANCEL_PRINT");
+      showToast("已发送停止打印命令");
+    });
+
+    $$(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.tab;
+        $$(".tab-btn").forEach(x => x.classList.toggle("active", x === btn));
+        $$(".tab-pane").forEach(pane => pane.classList.toggle("active", pane.id === `tab-${tab}`));
+
+        if (tab === "consumables" && !cfsData) refreshCfs();
+        if (tab === "files" && $("#filesContent").classList.contains("empty-state")) refreshFiles();
+        if (tab === "history" && $("#historyContent").classList.contains("empty-state")) refreshHistory();
+        if (tab === "timelapse" && $("#timelapseContent").classList.contains("empty-state")) refreshTimelapse();
+      });
+    });
+
+    $("#refreshCfs").addEventListener("click", refreshCfs);
+    $("#refreshFiles").addEventListener("click", refreshFiles);
+    $("#selectAllFiles").addEventListener("change", event => {
+      document.querySelectorAll("#filesContent .file-card-check").forEach(check => {
+        check.checked = event.target.checked;
+      });
+      updateFileSelectionUi();
+    });
+    $("#refreshHistory").addEventListener("click", refreshHistory);
+    $("#refreshTimelapse").addEventListener("click", refreshTimelapse);
+
+    timelapseSwitch.addEventListener("change", () => {
+      const value = timelapseSwitch.checked ? 1 : 0;
+      if (sendSet({ videoElapse: value })) {
+        printerState.videoElapse = value;
+        showToast(`延时摄影已${value ? "开启" : "关闭"}`);
+      } else {
+        timelapseSwitch.checked = !timelapseSwitch.checked;
+      }
+    });
+
+    $$(".step-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeJogStep = Number(btn.dataset.step);
+        $$(".step-btn").forEach(x => x.classList.toggle("active", x === btn));
+      });
+    });
+
+    $$("[data-jog]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const token = btn.dataset.jog;
+        const axis = token[0];
+        const sign = token[1] === "+" ? 1 : -1;
+        jog(axis, sign * activeJogStep);
+      });
+    });
+
+    $$("[data-z]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        jog("Z", (btn.dataset.z === "+" ? 1 : -1) * activeJogStep);
+      });
+    });
+
+    $("#homeXY").addEventListener("click", () => sendGcode("G28 X Y"));
+    $("#homeZ").addEventListener("click", () => sendGcode("G28 Z"));
+    $("#homeAll").addEventListener("click", () => sendGcode("G28"));
+
+    window.addEventListener("beforeunload", closeConnections);
+
+    renderPrinterStatus();
+    start();
+  </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v3d52b47920f24c319d37e2661827c42b1787588026925" integrity="sha512-d9sL6GJLXn6fInD1+TVXhTcQOsmxeHfmHAvwGDIxp5TO+uo1fiWW7mHomMj4MLRlCsJDTqXzWLHJFFlPCEIj/A==" data-cf-beacon='{"version":"2024.11.0","token":"45c2bf8136a245cd97f1c2e9a96c0730"}' crossorigin="anonymous"></script>
+</body>
+</html>
