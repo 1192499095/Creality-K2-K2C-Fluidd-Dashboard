@@ -33,7 +33,7 @@
       color: var(--text);
     }
 
-    body { padding: 8px; }
+    body { padding: 6px; }
 
     button, input, select { font: inherit; }
 
@@ -51,17 +51,17 @@
 
     .app {
       width: 100%;
-      min-height: calc(100vh - 16px);
+      min-height: calc(100vh - 12px);
       display: grid;
-      grid-template-columns: minmax(540px, 1.17fr) minmax(520px, 1fr);
-      gap: 8px;
+      grid-template-columns: minmax(560px, 1.18fr) minmax(520px, 1fr);
+      gap: 6px;
     }
 
     .column {
       min-width: 0;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
 
     .panel {
@@ -74,8 +74,8 @@
     }
 
     .panel-header {
-      height: 38px;
-      padding: 0 12px;
+      height: 32px;
+      padding: 0 10px;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -158,150 +158,393 @@
     }
 
     /* Current print ------------------------------------------------------ */
-    .print-panel { min-height: 190px; }
+    .print-panel {
+      flex: 0 0 auto;
+      min-height: 0;
+    }
 
     .print-body {
-      padding: 12px;
+      width: 100%;
+      aspect-ratio: 5.45 / 1;
+      min-height: 156px;
+      max-height: 205px;
+      padding: 10px 12px;
       display: grid;
-      grid-template-columns: 160px minmax(0, 1fr);
-      gap: 12px;
+      grid-template-columns: minmax(128px, 15.5%) minmax(0, 1fr) auto;
+      grid-template-areas: "thumb main actions";
+      gap: 14px;
+      align-items: stretch;
     }
 
     .print-thumb {
+      grid-area: thumb;
       position: relative;
-      min-height: 132px;
+      width: 100%;
+      height: 100%;
+      min-width: 128px;
+      min-height: 128px;
+      max-width: 176px;
+      align-self: center;
       display: grid;
       place-items: center;
       overflow: hidden;
-      border-radius: 6px;
-      background: #e7e9ed;
-      color: #cdd1d6;
-      font-size: 58px;
+      contain: layout paint;
+      border-radius: 7px;
+      background: #e3e5e9;
+      color: #c3c8ce;
+      font-size: 42px;
       user-select: none;
+      isolation: isolate;
     }
 
     .print-thumb-image {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      padding: 0;
       display: block;
-      background: #eef0f3;
+      object-fit: contain;
+      background: #e3e5e9;
+      image-rendering: auto;
     }
 
-    /* Author CSS can override the browser's default [hidden] rule.
-       Force the failed/empty image completely out of layout. */
-    .print-thumb-image[hidden] {
+    .print-thumb-image[hidden],
+    .print-thumb-placeholder[hidden],
+    .print-wave[hidden] {
       display: none !important;
-    }
-
-    .print-thumb.has-image {
-      background: #eef0f3;
     }
 
     .print-thumb-placeholder {
-      display: inline-grid;
+      display: grid;
       place-items: center;
       width: 100%;
       height: 100%;
+      color: #c3c8ce;
     }
 
-    .print-thumb-placeholder[hidden] {
-      display: none !important;
+    .print-wave {
+      --wave-progress: 0%;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 3;
+      height: var(--wave-progress);
+      overflow: hidden;
+      pointer-events: none;
+      background: rgba(80, 163, 211, .50);
+      transition: height .4s ease;
+      contain: strict;
     }
 
-    .print-info {
+    .print-wave::before,
+    .print-wave::after {
+      position: absolute;
+      left: -25%;
+      width: 150%;
+      height: 24px;
+      border-radius: 48% 52% 50% 50%;
+      content: "";
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .print-wave::before {
+      top: -11px;
+      background: radial-gradient(
+        ellipse at 50% 100%,
+        rgba(118, 192, 232, .70) 0 48%,
+        rgba(118, 192, 232, 0) 50%
+      );
+      animation: printWaveDriftA 5.8s linear infinite;
+    }
+
+    .print-wave::after {
+      top: -9px;
+      opacity: .52;
+      background: radial-gradient(
+        ellipse at 50% 100%,
+        rgba(65, 146, 196, .55) 0 47%,
+        rgba(65, 146, 196, 0) 50%
+      );
+      animation: printWaveDriftB 7.8s linear infinite;
+    }
+
+    .print-wave-highlight {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, .11),
+        rgba(88, 166, 211, .03) 32%,
+        rgba(52, 137, 191, .12)
+      );
+    }
+
+    @keyframes printWaveDriftA {
+      from { transform: translate3d(-7%, 0, 0) scaleY(.96); }
+      50% { transform: translate3d(7%, 2px, 0) scaleY(1.05); }
+      to { transform: translate3d(-7%, 0, 0) scaleY(.96); }
+    }
+
+    @keyframes printWaveDriftB {
+      from { transform: translate3d(6%, 0, 0) scaleY(1.03); }
+      50% { transform: translate3d(-6%, -2px, 0) scaleY(.95); }
+      to { transform: translate3d(6%, 0, 0) scaleY(1.03); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .print-wave::before,
+      .print-wave::after { animation: none; }
+      .print-wave { transition: none; }
+    }
+
+    .print-main {
+      grid-area: main;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 9px;
+      min-height: 0;
+      padding: 4px 0 3px;
+      display: grid;
+      grid-template-rows: auto 1fr auto auto auto;
+      gap: 5px;
+    }
+
+    .print-heading {
+      min-width: 0;
     }
 
     .print-file {
       overflow: hidden;
+      color: #222a33;
       font-size: 13px;
-      font-weight: 650;
+      font-weight: 600;
+      line-height: 1.3;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .print-meta {
+      margin-top: 7px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
+      gap: 18px;
+      color: #58636e;
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .print-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .print-meta-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-grid;
+      place-items: center;
+      color: #64707c;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .print-status-line {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
       gap: 12px;
-      color: var(--muted);
-      font-size: 11px;
+    }
+
+    .print-state-row {
+      min-width: 0;
     }
 
     .print-state {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 700;
+      color: #4387ff;
+      font-size: 11px;
+      font-weight: 500;
     }
 
-    .print-state::before {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: currentColor;
-      content: "";
-    }
-
+    .print-state::before { display: none; }
+    .print-state[data-state="printing"] { color: #4387ff; }
     .print-state[data-state="paused"],
     .print-state[data-state="processing"] { color: var(--warn); }
+    .print-state[data-state="completed"] { color: #2f98df; }
     .print-state[data-state="error"],
     .print-state[data-state="stopped"] { color: var(--danger); }
-    .print-state[data-state="completed"] { color: #3386dc; }
     .print-state[data-state="idle"],
-    .print-state[data-state="connecting"] { color: #8c949f; }
+    .print-state[data-state="connecting"] { color: #8b949e; }
+
+    .print-eta {
+      flex: 0 0 auto;
+      color: #3f4852;
+      font-size: 10px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
 
     .progress-track {
-      height: 5px;
+      height: 8px;
       overflow: hidden;
       border-radius: 999px;
-      background: #e0e3e7;
+      background: #42454b;
     }
 
     .progress-bar {
       width: 0;
       height: 100%;
       border-radius: inherit;
-      background: #4d535b;
+      background: #20c86b;
       transition: width .3s ease;
     }
 
     .progress-row {
-      display: flex;
-      justify-content: space-between;
-      color: #555f6b;
-      font-size: 11px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: center;
+      gap: 20px;
+      color: #4b555f;
+      font-size: 10px;
       font-variant-numeric: tabular-nums;
     }
 
+    .print-progress-value {
+      color: #19be62;
+      font-size: 11px;
+    }
+
+    .print-layer-value,
+    .print-remaining-value {
+      white-space: nowrap;
+    }
+
     .print-actions {
+      grid-area: actions;
+      align-self: end;
       display: flex;
+      align-items: center;
       justify-content: flex-end;
-      gap: 7px;
+      gap: 8px;
+      padding: 0 0 3px;
     }
 
-    .small-btn {
-      height: 30px;
+    .print-action-button {
+      min-width: 72px;
+      height: 34px;
       padding: 0 12px;
-      border: 1px solid #dfe3e7;
-      border-radius: 7px;
-      background: #fff;
-      color: #49525d;
-      font-size: 12px;
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      font-size: 11px;
+      font-weight: 650;
+      cursor: pointer;
+      transition:
+        transform .12s ease,
+        background .15s ease,
+        border-color .15s ease,
+        box-shadow .15s ease;
     }
 
-    .small-btn:hover { border-color: #c9cfd6; background: #f7f8f9; }
-    .small-btn.primary { border-color: #b9eccf; color: #0ca957; background: #f1fcf6; }
-    .small-btn.danger { border-color: #f0c7c9; color: #d54a51; background: #fff7f7; }
+    .print-action-button.pause {
+      border-color: rgba(25, 198, 107, .22);
+      background: #ecfaf2;
+      color: #149b55;
+    }
+
+    .print-action-button.stop {
+      border-color: rgba(228, 93, 99, .20);
+      background: #fff1f2;
+      color: #d94e55;
+    }
+
+    .print-action-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 9px rgba(25, 35, 45, .08);
+    }
+
+    .print-action-button.pause:hover:not(:disabled) {
+      border-color: rgba(25, 198, 107, .38);
+      background: #e3f8ec;
+    }
+
+    .print-action-button.stop:hover:not(:disabled) {
+      border-color: rgba(228, 93, 99, .35);
+      background: #ffe9eb;
+    }
+
+    .print-action-button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .print-action-button:disabled {
+      cursor: default;
+      opacity: .38;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .print-action-icon {
+      width: 14px;
+      display: inline-grid;
+      place-items: center;
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    @media (max-width: 1220px) {
+      .print-body {
+        aspect-ratio: auto;
+        min-height: 160px;
+        max-height: none;
+        grid-template-columns: 128px minmax(0, 1fr);
+        grid-template-areas:
+          "thumb main"
+          "actions actions";
+      }
+
+      .print-thumb {
+        min-width: 128px;
+        max-width: 128px;
+        min-height: 128px;
+      }
+
+      .print-actions {
+        padding: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .print-body {
+        grid-template-columns: 96px minmax(0, 1fr);
+        min-height: 145px;
+      }
+
+      .print-thumb {
+        min-width: 96px;
+        max-width: 96px;
+        min-height: 96px;
+      }
+
+      .print-meta {
+        gap: 8px;
+      }
+
+      .print-action-button {
+        min-width: 64px;
+        height: 32px;
+      }
+    }
 
     /* Settings ----------------------------------------------------------- */
     .settings-panel { flex: 0 0 auto; }
@@ -1780,6 +2023,514 @@
       }
     }
 
+  
+    /* Creality local_gcode previews ------------------------------------ */
+    .print-thumb {
+      isolation: isolate;
+    }
+
+    .print-thumb.is-loading::after {
+      position: absolute;
+      right: 8px;
+      bottom: 7px;
+      z-index: 2;
+      padding: 3px 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .78);
+      color: #89919a;
+      font-size: 9px;
+      line-height: 1;
+      content: "加载预览…";
+      backdrop-filter: blur(4px);
+    }
+
+    .print-thumb-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 8px;
+      object-fit: contain;
+      background: #eef0f3;
+    }
+
+    .file-card-thumb {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .file-card-thumb::before {
+      display: none !important;
+    }
+
+    .file-card-thumb-image {
+      position: absolute;
+      inset: 7px;
+      width: calc(100% - 14px);
+      height: calc(100% - 14px);
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity .18s ease;
+    }
+
+    .file-card-thumb-image.ready {
+      opacity: 1;
+    }
+
+    .file-card-thumb-placeholder {
+      position: relative;
+      z-index: 0;
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      color: #c1c7ce;
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: .05em;
+    }
+
+    .file-card-thumb.has-image .file-card-thumb-placeholder {
+      opacity: 0;
+    }
+
+  
+    /* History / timelapse managers ------------------------------------- */
+    .archive-topbar {
+      height: 50px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      color: #252c35;
+      font-size: 14px;
+    }
+
+    .archive-top-left,
+    .archive-top-actions,
+    .timelapse-toggle-compact {
+      display: flex;
+      align-items: center;
+    }
+
+    .archive-top-left { gap: 18px; }
+    .archive-top-actions { gap: 10px; }
+
+    .timelapse-toggle-compact {
+      gap: 7px;
+      color: #66717d;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .timelapse-toggle-compact .switch {
+      transform: scale(.78);
+      transform-origin: right center;
+    }
+
+    .archive-sortbar {
+      min-height: 48px;
+      padding: 0 20px;
+      display: grid;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid var(--line);
+      color: #222a33;
+      font-size: 13px;
+    }
+
+    .archive-sortbar.history {
+      grid-template-columns: minmax(150px, 1.2fr) 130px 130px 120px 100px;
+    }
+
+    .archive-sortbar.timelapse {
+      grid-template-columns: minmax(150px, 1.15fr) 100px minmax(145px, .9fr) 130px 110px;
+    }
+
+    .archive-sortbar .sort-head {
+      justify-self: start;
+    }
+
+    .archive-select-all {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: max-content;
+      cursor: pointer;
+    }
+
+    .archive-select-all input,
+    .archive-card-check {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+    }
+
+    .archive-grid {
+      padding: 14px 12px 28px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(360px, 1fr));
+      gap: 14px 16px;
+    }
+
+    .archive-card {
+      position: relative;
+      min-width: 0;
+      min-height: 122px;
+      display: grid;
+      grid-template-columns: 165px minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid #dfe3e7;
+      border-radius: 10px;
+      background: #fff;
+      transition: border-color .12s ease, box-shadow .12s ease;
+    }
+
+    .archive-card.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(22, 199, 102, .07);
+    }
+
+    .archive-card-thumb {
+      position: relative;
+      min-height: 122px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border-right: 1px solid #eef0f2;
+      background: #f0f1f3;
+      color: #c4cad0;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: .04em;
+    }
+
+    .archive-card-thumb img {
+      position: absolute;
+      inset: 7px;
+      width: calc(100% - 14px);
+      height: calc(100% - 14px);
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity .18s ease;
+    }
+
+    .archive-card-thumb img.ready { opacity: 1; }
+    .archive-card-thumb.has-image .archive-thumb-placeholder { opacity: 0; }
+
+    .archive-thumb-placeholder {
+      transition: opacity .15s ease;
+    }
+
+    .archive-card-body {
+      min-width: 0;
+      padding: 11px 20px 10px 10px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 9px;
+    }
+
+    .archive-title-row {
+      min-width: 0;
+      padding-right: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .archive-status-dot {
+      flex: 0 0 auto;
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .archive-status-dot.success { background: #448cf4; }
+    .archive-status-dot.warning { background: #fb8a09; }
+
+    .archive-card-title {
+      min-width: 0;
+      overflow: hidden;
+      color: #25303a;
+      font-size: 13px;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .archive-share {
+      margin-left: auto;
+      padding: 2px 4px;
+      border: 0;
+      background: transparent;
+      color: #27323c;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    .archive-share:hover { color: var(--accent); }
+
+    .archive-meta-grid {
+      align-self: end;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 9px 18px;
+      color: #4c5865;
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .archive-meta-grid .right {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .archive-video-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .archive-card-check {
+      position: absolute;
+      top: 11px;
+      right: 12px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .archive-context-menu {
+      position: fixed;
+      z-index: 1005;
+      width: 154px;
+      padding: 7px 0;
+      border: 1px solid #dfe3e8;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(31, 38, 46, .18);
+      color: #303740;
+      user-select: none;
+    }
+
+    .archive-context-menu[hidden] { display: none; }
+
+    .archive-context-menu button {
+      width: 100%;
+      height: 40px;
+      padding: 0 22px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: #303740;
+      font: 500 14px/1 inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .archive-context-menu button:hover:not(:disabled) {
+      background: #f2f4f6;
+    }
+
+    .archive-context-menu button.danger:hover:not(:disabled) {
+      background: #fff1f1;
+      color: #d83939;
+    }
+
+    .archive-context-menu button:disabled {
+      color: #b8bec5;
+      cursor: default;
+    }
+
+    @media (max-width: 900px) {
+      .archive-sortbar.history,
+      .archive-sortbar.timelapse {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .archive-sortbar .sort-head {
+        display: none;
+      }
+
+      .archive-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .archive-card {
+        grid-template-columns: 108px minmax(0, 1fr);
+      }
+
+      .archive-card-thumb {
+        min-height: 116px;
+      }
+
+      .archive-meta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .archive-meta-grid .right {
+        text-align: left;
+      }
+    }
+
+  
+    /* Unified manager proportions / one-line headers ------------------- */
+    .file-card,
+    .archive-card {
+      min-height: 122px;
+      grid-template-columns: 165px minmax(0, 1fr);
+    }
+
+    .file-card-thumb,
+    .archive-card-thumb {
+      min-height: 122px;
+    }
+
+    .file-card-info {
+      padding: 11px 18px 10px 10px;
+      row-gap: 8px;
+    }
+
+    /* Reserve a fixed block for "全选", then place all sorting controls
+       left-to-right on one unbroken row. */
+    .file-shot-sortbar,
+    .archive-sortbar,
+    .archive-sortbar.history,
+    .archive-sortbar.timelapse {
+      min-height: 48px;
+      padding: 0 20px;
+      display: grid !important;
+      grid-template-columns: 210px;
+      grid-auto-flow: column;
+      grid-auto-columns: max-content;
+      column-gap: 54px;
+      align-items: center;
+      justify-content: start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: thin;
+      white-space: nowrap;
+    }
+
+    .file-shot-sortbar .sort-head,
+    .archive-sortbar .sort-head {
+      display: inline-flex !important;
+      align-items: center;
+      justify-self: start;
+    }
+
+    .file-select-all,
+    .archive-select-all {
+      width: 210px;
+      flex: 0 0 210px;
+    }
+
+    /* Timelapse information is intentionally vertical, matching the
+       reference: model -> video -> size -> start -> duration. */
+    .timelapse-card .archive-card-body {
+      padding: 10px 22px 9px 10px;
+      display: block;
+    }
+
+    .timelapse-card .archive-title-row {
+      min-height: 24px;
+      margin-bottom: 6px;
+    }
+
+    .timelapse-details {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 5px;
+      color: #4c5865;
+      font-size: 12px;
+      line-height: 1.25;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .timelapse-detail-line {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .timelapse-detail-line strong {
+      color: #4c5865;
+      font-weight: 400;
+    }
+
+    /* The card is only ~122px high, so keep 5 vertical metadata rows dense. */
+    .timelapse-card .archive-card-title {
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .file-shot-sortbar,
+      .archive-sortbar,
+      .archive-sortbar.history,
+      .archive-sortbar.timelapse {
+        display: grid !important;
+        grid-template-columns: 180px;
+        grid-auto-flow: column;
+        grid-auto-columns: max-content;
+        column-gap: 34px;
+      }
+
+      .file-shot-sortbar .sort-head,
+      .archive-sortbar .sort-head {
+        display: inline-flex !important;
+      }
+
+      .file-select-all,
+      .archive-select-all {
+        width: 180px;
+        flex-basis: 180px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .file-shot-sortbar .sort-head,
+      .archive-sortbar .sort-head {
+        display: inline-flex !important;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .file-card,
+      .archive-card {
+        grid-template-columns: 108px minmax(0, 1fr);
+      }
+
+      .file-card-thumb,
+      .archive-card-thumb {
+        min-height: 116px;
+      }
+
+      .file-shot-sortbar,
+      .archive-sortbar,
+      .archive-sortbar.history,
+      .archive-sortbar.timelapse {
+        grid-template-columns: 130px;
+        column-gap: 24px;
+      }
+
+      .file-select-all,
+      .archive-select-all {
+        width: 130px;
+        flex-basis: 130px;
+      }
+    }
+
   </style>
 </head>
 
@@ -1811,34 +2562,59 @@
         </div>
         <div class="print-body">
           <div id="printThumb" class="print-thumb" aria-hidden="true">
-            <img id="printThumbImage" class="print-thumb-image" alt="" hidden>
-            <span id="printThumbPlaceholder" class="print-thumb-placeholder">◇</span>
+            <img id="printThumbImage" class="print-thumb-image" alt="" aria-hidden="true" hidden>
+            <span id="printThumbPlaceholder" class="print-thumb-placeholder" title="暂无模型预览图">◇</span>
+            <div id="printWave" class="print-wave" aria-hidden="true">
+              <span class="print-wave-highlight"></span>
+            </div>
           </div>
-          <div class="print-info">
-            <div>
+
+          <div class="print-main">
+            <div class="print-heading">
               <div id="printFile" class="print-file" title="">正在等待打印机数据...</div>
               <div class="print-meta">
-                <span id="printTime">--:--:-- / --:--:--</span>
-                <span id="printLayer">0 / 0 层</span>
+                <span class="print-meta-item">
+                  <span class="print-meta-icon" aria-hidden="true">◷</span>
+                  <span id="printElapsedCompact">--h --m</span>
+                </span>
+                <span class="print-meta-item">
+                  <span class="print-meta-icon" aria-hidden="true">◉</span>
+                  <span id="printFilamentWeight">--g</span>
+                </span>
               </div>
             </div>
 
-            <div class="print-state-row">
-              <span id="printState" class="print-state" data-state="connecting">正在连接</span>
+            <div></div>
+
+            <div class="print-status-line">
+              <div class="print-state-row">
+                <span id="printState" class="print-state" data-state="connecting">正在连接</span>
+              </div>
+              <span id="printEta" class="print-eta">预计完成时间：--:--</span>
             </div>
 
             <div class="progress-track" aria-hidden="true">
               <div id="progressBar" class="progress-bar"></div>
             </div>
-            <div class="progress-row">
-              <span id="printProgress">0%</span>
-              <span id="printEta">预计完成时间：--:--</span>
-            </div>
 
-            <div class="print-actions">
-              <button id="pauseResume" class="small-btn primary" type="button">暂停</button>
-              <button id="stopPrint" class="small-btn danger" type="button">停止</button>
+            <div class="progress-row">
+              <span id="printProgress" class="print-progress-value">0%</span>
+              <span id="printLayer" class="print-layer-value">0 / 0</span>
+              <span id="printRemainingCompact" class="print-remaining-value">--h --min</span>
             </div>
+          </div>
+
+          <div class="print-actions">
+            <button id="pauseResume" class="print-action-button pause" type="button"
+                    title="暂停打印" aria-label="暂停打印">
+              <span id="pauseResumeIcon" class="print-action-icon" aria-hidden="true">Ⅱ</span>
+              <span id="pauseResumeLabel">暂停</span>
+            </button>
+            <button id="stopPrint" class="print-action-button stop" type="button"
+                    title="停止打印" aria-label="停止打印">
+              <span class="print-action-icon" aria-hidden="true">■</span>
+              <span>停止</span>
+            </button>
           </div>
         </div>
       </section>
@@ -2100,6 +2876,10 @@
                 <span>全选</span>
                 <input id="selectAllFiles" type="checkbox" aria-label="全选本地文件">
               </label>
+              <button class="sort-head" type="button" data-file-sort="filename"
+                      aria-label="按文件名称排序" title="按文件名称排序">
+                文件名称 <span class="sort-mark">⇅</span>
+              </button>
               <button class="sort-head" type="button" data-file-sort="size"
                       aria-label="按文件大小排序" title="按文件大小排序">
                 文件大小 <span class="sort-mark">⇅</span>
@@ -2120,32 +2900,89 @@
           </div>
 
           <div id="tab-history" class="tab-pane">
-            <div class="list-toolbar">
-              <span class="section-hint">最近打印任务</span>
-              <button id="refreshHistory" class="small-btn" type="button">刷新记录</button>
+            <div class="archive-topbar">
+              <div class="archive-top-left">
+                <div>已选文件： <strong id="historySelectedCount">0</strong> / <strong id="historyTotalCount">0</strong></div>
+              </div>
+              <div class="archive-top-actions">
+                <button id="exportSelectedHistory" class="file-shot-icon" type="button"
+                        title="导出所选 G-code" aria-label="导出所选历史 G-code" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M14 4h6v6"></path><path d="M20 4l-8 8"></path>
+                    <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path>
+                  </svg>
+                </button>
+                <button id="deleteSelectedHistory" class="file-shot-icon" type="button"
+                        title="删除所选历史记录" aria-label="删除所选历史记录" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16"></path><path d="M9 7V4h6v3"></path>
+                    <path d="m6 7 1 13h10l1-13"></path><path d="M10 11v5M14 11v5"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
+
+            <div class="archive-sortbar history">
+              <label class="archive-select-all">
+                <span>全选</span>
+                <input id="selectAllHistory" type="checkbox" aria-label="全选历史记录">
+              </label>
+              <button class="sort-head" type="button" data-history-sort="filename">文件名称 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-history-sort="start">开始时间 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-history-sort="end">结束时间 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-history-sort="duration">打印时长 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-history-sort="size">大小 <span class="sort-mark">⇅</span></button>
+            </div>
+
             <div id="historyContent" class="empty-state">
-              <div><strong>尚未读取历史记录</strong>点击“刷新记录”获取最近打印任务。</div>
+              <div><strong>尚未读取历史记录</strong>打开此标签页后会自动读取最近打印任务。</div>
             </div>
           </div>
 
           <div id="tab-timelapse" class="tab-pane">
-            <div class="timelapse-head">
-              <div>
-                <div style="font-size:12px;font-weight:700;color:#46505b;">延时摄影</div>
-                <div style="margin-top:3px;font-size:10px;color:#8b949f;">控制 K2 原厂延时摄影并查看视频列表</div>
+            <div class="archive-topbar">
+              <div class="archive-top-left">
+                <div>已选文件： <strong id="timelapseSelectedCount">0</strong> / <strong id="timelapseTotalCount">0</strong></div>
+                <div class="timelapse-toggle-compact" title="K2 原厂延时摄影开关">
+                  <span>延时摄影</span>
+                  <label class="switch">
+                    <input id="timelapseSwitch" type="checkbox">
+                    <span class="switch-track"></span>
+                  </label>
+                </div>
               </div>
-              <label class="switch">
-                <input id="timelapseSwitch" type="checkbox">
-                <span class="switch-track"></span>
+              <div class="archive-top-actions">
+                <button id="exportSelectedTimelapse" class="file-shot-icon" type="button"
+                        title="导出所选视频" aria-label="导出所选延时摄影" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M14 4h6v6"></path><path d="M20 4l-8 8"></path>
+                    <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"></path>
+                  </svg>
+                </button>
+                <button id="deleteSelectedTimelapse" class="file-shot-icon" type="button"
+                        title="删除所选视频" aria-label="删除所选延时摄影" disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16"></path><path d="M9 7V4h6v3"></path>
+                    <path d="m6 7 1 13h10l1-13"></path><path d="M10 11v5M14 11v5"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="archive-sortbar timelapse">
+              <label class="archive-select-all">
+                <span>全选</span>
+                <input id="selectAllTimelapse" type="checkbox" aria-label="全选延时摄影">
               </label>
+              <button class="sort-head" type="button" data-timelapse-sort="gcode">文件名称 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-timelapse-sort="size">大小 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-timelapse-sort="videoName">视频名称 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-timelapse-sort="start">开始时间 <span class="sort-mark">⇅</span></button>
+              <button class="sort-head" type="button" data-timelapse-sort="duration">视频时长 <span class="sort-mark">⇅</span></button>
             </div>
-            <div class="list-toolbar">
-              <span class="section-hint">延时摄影文件</span>
-              <button id="refreshTimelapse" class="small-btn" type="button">刷新视频</button>
-            </div>
+
             <div id="timelapseContent" class="empty-state">
-              <div><strong>尚未读取延时摄影列表</strong>点击“刷新视频”获取列表。</div>
+              <div><strong>尚未读取延时摄影列表</strong>打开此标签页后会自动读取视频列表。</div>
             </div>
           </div>
         </div>
@@ -2159,6 +2996,18 @@
     <button type="button" role="menuitem" data-file-action="print">开始打印</button>
     <button type="button" role="menuitem" data-file-action="export">导出</button>
     <button type="button" role="menuitem" data-file-action="delete" class="danger">删除</button>
+  </div>
+
+  <div id="historyContextMenu" class="archive-context-menu" role="menu" hidden>
+    <button id="historyReprintAction" type="button" role="menuitem" data-history-action="reprint">重新打印</button>
+    <button type="button" role="menuitem" data-history-action="export">导出</button>
+    <button type="button" role="menuitem" data-history-action="delete" class="danger">删除</button>
+  </div>
+
+  <div id="timelapseContextMenu" class="archive-context-menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-timelapse-action="copy">拷贝链接</button>
+    <button type="button" role="menuitem" data-timelapse-action="export">导出</button>
+    <button type="button" role="menuitem" data-timelapse-action="delete" class="danger">删除</button>
   </div>
 
   <pre id="debug" class="debug" hidden></pre>
@@ -2192,11 +3041,16 @@
     const printThumbElement = $("#printThumb");
     const printThumbImage = $("#printThumbImage");
     const printThumbPlaceholder = $("#printThumbPlaceholder");
+    const printWaveElement = $("#printWave");
     const progressBar = $("#progressBar");
     const printLayerElement = $("#printLayer");
-    const printTimeElement = $("#printTime");
+    const printElapsedCompactElement = $("#printElapsedCompact");
+    const printFilamentWeightElement = $("#printFilamentWeight");
+    const printRemainingCompactElement = $("#printRemainingCompact");
     const printEtaElement = $("#printEta");
     const pauseResumeButton = $("#pauseResume");
+    const pauseResumeIcon = $("#pauseResumeIcon");
+    const pauseResumeLabel = $("#pauseResumeLabel");
     const stopPrintButton = $("#stopPrint");
 
     const nozzleCurrentElement = $("#nozzleCurrent");
@@ -2236,13 +3090,42 @@
 
     let currentFileRecords = [];
     let currentFileSourceItems = [];
-    let fileSortState = { key: null, direction: 1 };
+    let fileSortState = { key: "modified", direction: -1 };
     let fileContextTargetIndex = -1;
     let fileUploadBusy = false;
 
-    const gcodeThumbnailCache = new Map();
+    let historyRecords = [];
+    let historySourceItems = [];
+    let historySortState = { key: "start", direction: -1 };
+    let historyContextTargetIndex = -1;
+
+    let timelapseRecords = [];
+    let timelapseSourceItems = [];
+    let timelapseSortState = { key: "start", direction: -1 };
+    let timelapseContextTargetIndex = -1;
+
+    // K2 local_gcode catalog. reqGcodeFile exposes the same data family as
+    // /mnt/UDISK/creality/local_gcode/local_gcode_file_info.json.
+    const localGcodeCatalog = new Map();
+    const previewUrlCache = new Map();
+
+    // Moonraker parses the G-code itself and exposes authoritative slicer
+    // metadata such as filament_weight_total, filament_weights, layer_height
+    // and thumbnails. This is more stable than Creality's temporary JSON.
+    const gcodeMetadataCache = new Map();
+    const gcodeMetadataPending = new Map();
+    const previewRetryAt = new Map();
+
+    // OrcaSlicer metadata embedded directly in the G-code. This is the
+    // authoritative fallback for filament mass and thumbnails on K2.
+    const directGcodeInfoCache = new Map();
+    const directGcodeInfoPending = new Map();
+
     let currentPrintThumbnailPath = "";
     let currentPrintThumbnailRequestId = 0;
+    let currentPrintPreviewRetryAt = 0;
+    let currentPrintMetadataPath = "";
+    let currentPrintMetadataWeight = null;
 
     const logLines = [];
     const printerState = {};
@@ -2252,9 +3135,16 @@
     function log(message) {
       const line = `${new Date().toLocaleTimeString()}  ${message}`;
       logLines.push(line);
-      if (logLines.length > 180) logLines.splice(0, logLines.length - 180);
-      debugBox.textContent = logLines.join("\n");
-      console.log(`[创想三维 K2 控制台] ${message}`);
+      if (logLines.length > 160) logLines.splice(0, logLines.length - 160);
+
+      // 调试框关闭时不重建大段文本，降低主线程开销，避免影响 WebRTC 视频。
+      if (!debugBox.hidden) {
+        debugBox.textContent = logLines.join("\n");
+      }
+
+      if (!debugBox.hidden) {
+        console.log(`[创想三维 K2 控制台] ${message}`);
+      }
     }
 
     function showToast(message) {
@@ -2280,6 +3170,132 @@
       const minutes = Math.floor((seconds % 3600) / 60);
       const remainder = seconds % 60;
       return [hours, minutes, remainder].map(part => String(part).padStart(2, "0")).join(":");
+    }
+
+    function formatCompactElapsed(value) {
+      if (value === undefined || value === null || !Number.isFinite(Number(value))) return "--h --m";
+      const seconds = Math.max(0, Math.round(Number(value)));
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
+    }
+
+    function formatCompactRemaining(value) {
+      if (value === undefined || value === null || !Number.isFinite(Number(value)) || Number(value) <= 0) {
+        return "--h --min";
+      }
+      const seconds = Math.max(0, Math.round(Number(value)));
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return `-${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}min`;
+    }
+
+    function currentPrintLocalInfo() {
+      return findLocalGcodeInfo(printerState.printFileName) || {};
+    }
+
+    const FILAMENT_DENSITY_G_CM3 = Object.freeze({
+      PLA: 1.24,
+      "PLA-CF": 1.30,
+      PETG: 1.27,
+      ABS: 1.04,
+      ASA: 1.07,
+      TPU: 1.21,
+      PA: 1.14,
+      "PA-CF": 1.20,
+      PC: 1.20
+    });
+
+    function sumNumericList(value) {
+      if (value === undefined || value === null || value === "") return null;
+      const numbers = String(value)
+        .split(/[,;]/)
+        .map(part => Number(part.trim()))
+        .filter(Number.isFinite);
+      if (!numbers.length) return null;
+      return numbers.reduce((sum, number) => sum + number, 0);
+    }
+
+    function estimateFilamentWeightFromLength(info) {
+      const rawLength = firstDefined(
+        info?.materialUsed,
+        info?.consumables,
+        printerState.usedMaterialLength
+      );
+      const lengthMm = Number(rawLength);
+      if (!Number.isFinite(lengthMm) || lengthMm <= 0) return null;
+
+      const materials = String(firstDefined(info?.material, printerState.material) || "")
+        .split(/[;,]/)
+        .map(value => value.trim().toUpperCase())
+        .filter(Boolean);
+
+      const densities = materials
+        .map(material => FILAMENT_DENSITY_G_CM3[material])
+        .filter(Number.isFinite);
+
+      // PETG-like default is deliberately avoided; use PLA density as the
+      // neutral fallback only when no material name is available.
+      const density = densities.length
+        ? densities.reduce((sum, value) => sum + value, 0) / densities.length
+        : 1.24;
+
+      const diameterMm = 1.75;
+      const areaMm2 = Math.PI * Math.pow(diameterMm / 2, 2);
+      const volumeCm3 = (lengthMm * areaMm2) / 1000;
+      return volumeCm3 * density;
+    }
+
+    function currentPrintFilamentWeight() {
+      if (Number.isFinite(currentPrintMetadataWeight) && currentPrintMetadataWeight > 0) {
+        return currentPrintMetadataWeight;
+      }
+
+      const info = currentPrintLocalInfo();
+
+      const direct = sumNumericList(firstDefined(
+        info.filamentWeight,
+        info.filament_weight,
+        printerState.filamentWeight,
+        printerState.printFilamentWeight
+      ));
+
+      if (Number.isFinite(direct)) return direct;
+
+      return estimateFilamentWeightFromLength(info);
+    }
+
+    async function hydrateCurrentPrintMetadata(filePath) {
+      const normalized = normaliseLocalGcodePath(filePath);
+      if (!normalized) {
+        currentPrintMetadataPath = "";
+        currentPrintMetadataWeight = null;
+        return;
+      }
+
+      if (normalized === currentPrintMetadataPath
+          && Number.isFinite(currentPrintMetadataWeight)) {
+        return;
+      }
+
+      currentPrintMetadataPath = normalized;
+      const metadata = await getGcodeMetadata(normalized);
+      if (currentPrintMetadataPath !== normalized || !metadata) return;
+
+      let weight = metadataFilamentWeight(metadata);
+
+      if (!(Number.isFinite(weight) && weight > 0)) {
+        const direct = await getDirectGcodeInfo(normalized);
+        if (currentPrintMetadataPath !== normalized) return;
+        if (Number.isFinite(direct?.weight) && direct.weight > 0) {
+          weight = direct.weight;
+        }
+      }
+
+      if (Number.isFinite(weight) && weight > 0) {
+        currentPrintMetadataWeight = weight;
+        printFilamentWeightElement.textContent = `${weight.toFixed(2)}g`;
+      }
     }
 
     function formatTemperature(value) {
@@ -2343,6 +3359,37 @@
       return undefined;
     }
 
+    function findDeepObjectValue(obj, names, maxDepth = 5) {
+      if (!obj || typeof obj !== "object") return undefined;
+
+      const wanted = new Set(names.map(name => String(name).toLowerCase()));
+      const visited = new Set();
+
+      function walk(node, depth) {
+        if (!node || typeof node !== "object" || depth > maxDepth || visited.has(node)) {
+          return undefined;
+        }
+        visited.add(node);
+
+        for (const [key, value] of Object.entries(node)) {
+          if (wanted.has(String(key).toLowerCase())
+              && value !== undefined && value !== null && value !== "") {
+            return value;
+          }
+        }
+
+        for (const value of Object.values(node)) {
+          if (!value || typeof value !== "object") continue;
+          const hit = walk(value, depth + 1);
+          if (hit !== undefined) return hit;
+        }
+
+        return undefined;
+      }
+
+      return walk(obj, 0);
+    }
+
     function getFriendlyState() {
       if (!telemetryReady) return { label: "正在连接", key: "connecting" };
       const errorCode = numeric(printerState.err?.errcode, 0);
@@ -2370,116 +3417,608 @@
     }
 
 
-    function dirnamePath(path) {
-      const parts = normaliseLocalGcodePath(path).split("/").filter(Boolean);
-      parts.pop();
-      return parts.join("/");
+    /* Direct OrcaSlicer G-code parser ---------------------------------- */
+    function gcodeDownloadUrl(filePath) {
+      const normalized = normaliseLocalGcodePath(filePath);
+      if (!normalized) return "";
+      return `/server/files/gcodes/${encodeGcodePath(normalized)}`;
     }
 
-    function joinRelativePath(baseDir, relativePath) {
-      const output = [];
-      for (const part of `${baseDir ? `${baseDir}/` : ""}${relativePath || ""}`.split("/")) {
-        if (!part || part === ".") continue;
-        if (part === "..") output.pop();
-        else output.push(part);
-      }
-      return output.join("/");
+    function parseNumberList(value) {
+      if (value === undefined || value === null) return [];
+      return String(value)
+        .match(/-?\d+(?:\.\d+)?/g)?.map(Number).filter(Number.isFinite) || [];
     }
 
-    function setCurrentPrintThumbnail(url = "", title = "") {
-      if (url) {
-        printThumbImage.hidden = true;
-        printThumbImage.alt = "";
-        printThumbImage.src = url;
-        printThumbPlaceholder.hidden = true;
-        printThumbElement.classList.add("has-image");
+    async function fetchGcodeRange(filePath, start, end) {
+      const url = gcodeDownloadUrl(filePath);
+      if (!url) return "";
 
-        // Show only after the browser confirms the image is valid.
-        if (printThumbImage.complete && printThumbImage.naturalWidth > 0) {
-          printThumbImage.hidden = false;
+      try {
+        const response = await fetch(url, {
+          cache: "no-store",
+          headers: {
+            Range: `bytes=${Math.max(0, start)}-${Math.max(start, end)}`
+          }
+        });
+
+        if (!response.ok && response.status !== 206) return "";
+
+        // Moonraker normally honors Range. If a firmware ignores it and tries
+        // to send a huge file, don't pull the full G-code into the browser.
+        const length = Number(response.headers.get("content-length"));
+        if (response.status === 200 && Number.isFinite(length) && length > 1024 * 1024) {
+          try { response.body?.cancel(); } catch {}
+          return "";
         }
-      } else {
-        printThumbImage.hidden = true;
-        printThumbImage.alt = "";
-        printThumbImage.removeAttribute("src");
-        printThumbPlaceholder.hidden = false;
-        printThumbElement.classList.remove("has-image");
+
+        return await response.text();
+      } catch {
+        return "";
       }
     }
 
-    function chooseThumbnail(items) {
-      const list = Array.isArray(items) ? items.filter(Boolean).slice() : [];
-      if (!list.length) return null;
+    async function getGcodeFileSize(filePath) {
+      const metadata = await getGcodeMetadata(filePath);
+      const size = Number(metadata?.size);
+      return Number.isFinite(size) && size > 0 ? size : null;
+    }
 
-      // Prefer a medium/large image.  This avoids picking the 32x32 icon
-      // when a 300/400px preview exists.
-      list.sort((a, b) => {
-        const aArea = (Number(a?.width) || 0) * (Number(a?.height) || 0);
-        const bArea = (Number(b?.width) || 0) * (Number(b?.height) || 0);
-        return aArea - bArea;
+    function parseOrcaThumbnailBlocks(text) {
+      const results = [];
+      if (!text) return results;
+
+      const regex = /;\s*thumbnail begin\s+(\d+)x(\d+)\s+\d+\s*\r?\n([\s\S]*?)\r?\n;\s*thumbnail end/gi;
+      let match;
+
+      while ((match = regex.exec(text))) {
+        const width = Number(match[1]);
+        const height = Number(match[2]);
+        const payload = String(match[3] || "")
+          .split(/\r?\n/)
+          .map(line => line.replace(/^\s*;\s?/, "").trim())
+          .join("");
+
+        if (!payload || !/^iVBOR/i.test(payload)) continue;
+
+        results.push({
+          width,
+          height,
+          area: width * height,
+          url: `data:image/png;base64,${payload}`
+        });
+      }
+
+      return results;
+    }
+
+    function parseOrcaHeaderValue(text, key) {
+      if (!text) return "";
+      const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const match = text.match(new RegExp(
+        `^\\s*;\\s*${escaped}\\s*[:=]\\s*(.+)$`,
+        "mi"
+      ));
+      return match ? match[1].trim() : "";
+    }
+
+    function parseOrcaFilamentWeight(headText, tailText) {
+      const text = `${headText || ""}\n${tailText || ""}`;
+
+      // Prefer the explicit OrcaSlicer gram field.
+      const gramPatterns = [
+        /^\s*;\s*total\s+filament\s+used\s*\[g\]\s*=\s*(.+)$/mi,
+        /^\s*;\s*filament\s+used\s*\[g\]\s*=\s*(.+)$/mi,
+        /^\s*;\s*filament_weight_total\s*[:=]\s*(.+)$/mi,
+        /^\s*;\s*filament_weight\s*[:=]\s*(.+)$/mi
+      ];
+
+      for (const pattern of gramPatterns) {
+        const match = text.match(pattern);
+        if (!match) continue;
+        const values = parseNumberList(match[1]);
+        if (values.length) {
+          const sum = values.reduce((total, value) => total + value, 0);
+          if (sum > 0) return sum;
+        }
+      }
+
+      // Second-best source: volume in cm³ multiplied by density.
+      const cm3Match = text.match(/^\s*;\s*filament\s+used\s*\[cm3\]\s*=\s*(.+)$/mi);
+      if (cm3Match) {
+        const volumes = parseNumberList(cm3Match[1]);
+        const densities = parseNumberList(parseOrcaHeaderValue(headText, "filament_density"));
+        if (volumes.length && densities.length) {
+          let grams = 0;
+          volumes.forEach((volume, index) => {
+            const density = densities[index] ?? densities[0];
+            if (Number.isFinite(density)) grams += volume * density;
+          });
+          if (grams > 0) return grams;
+        }
+      }
+
+      // Fallback: length [mm] + diameter + density.
+      const mmMatch = text.match(/^\s*;\s*filament\s+used\s*\[mm\]\s*=\s*(.+)$/mi);
+      if (mmMatch) {
+        const lengths = parseNumberList(mmMatch[1]);
+        const densities = parseNumberList(parseOrcaHeaderValue(headText, "filament_density"));
+        const diameters = parseNumberList(parseOrcaHeaderValue(headText, "filament_diameter"));
+
+        if (lengths.length && densities.length && diameters.length) {
+          let grams = 0;
+
+          lengths.forEach((lengthMm, index) => {
+            const density = densities[index] ?? densities[0];
+            const diameter = diameters[index] ?? diameters[0];
+            if (!Number.isFinite(density) || !Number.isFinite(diameter)) return;
+
+            const areaMm2 = Math.PI * Math.pow(diameter / 2, 2);
+            const volumeCm3 = lengthMm * areaMm2 / 1000;
+            grams += volumeCm3 * density;
+          });
+
+          if (grams > 0) return grams;
+        }
+      }
+
+      return null;
+    }
+
+    function parseOrcaLayerHeight(headText, tailText) {
+      const text = `${headText || ""}\n${tailText || ""}`;
+      const patterns = [
+        /^\s*;\s*layer_height\s*[:=]\s*([0-9.]+)/mi,
+        /^\s*;\s*layer\s+height\s*[:=]\s*([0-9.]+)/mi,
+        /^\s*;\s*layer_height\s*=\s*([0-9.]+)/mi
+      ];
+
+      for (const pattern of patterns) {
+        const match = text.match(pattern);
+        const value = Number(match?.[1]);
+        if (Number.isFinite(value) && value > 0) return value;
+      }
+
+      return null;
+    }
+
+    async function getDirectGcodeInfo(filePath, force = false) {
+      const normalized = normaliseLocalGcodePath(filePath);
+      if (!normalized) return null;
+
+      if (!force && directGcodeInfoCache.has(normalized)) {
+        return directGcodeInfoCache.get(normalized);
+      }
+
+      if (!force && directGcodeInfoPending.has(normalized)) {
+        return directGcodeInfoPending.get(normalized);
+      }
+
+      const promise = (async () => {
+        try {
+          const size = await getGcodeFileSize(normalized);
+
+          // The user's OrcaSlicer file has ~33KB of header metadata and two
+          // embedded thumbnails. 96KB gives ample room without reading the
+          // entire G-code.
+          const headText = await fetchGcodeRange(normalized, 0, 96 * 1024 - 1);
+
+          let tailText = "";
+          if (Number.isFinite(size) && size > 0) {
+            const tailSize = 96 * 1024;
+            const start = Math.max(0, size - tailSize);
+            tailText = await fetchGcodeRange(normalized, start, size - 1);
+          }
+
+          const thumbnails = parseOrcaThumbnailBlocks(headText);
+          const info = {
+            weight: parseOrcaFilamentWeight(headText, tailText),
+            layerHeight: parseOrcaLayerHeight(headText, tailText),
+            density: parseNumberList(parseOrcaHeaderValue(headText, "filament_density")),
+            diameter: parseNumberList(parseOrcaHeaderValue(headText, "filament_diameter")),
+            thumbnails,
+            slicer: parseOrcaHeaderValue(headText, "generated by") || "OrcaSlicer"
+          };
+
+          directGcodeInfoCache.set(normalized, info);
+          return info;
+        } finally {
+          directGcodeInfoPending.delete(normalized);
+        }
+      })();
+
+      directGcodeInfoPending.set(normalized, promise);
+      return promise;
+    }
+
+    async function resolveDirectGcodeThumbnail(filePath, size = "small", force = false) {
+      const info = await getDirectGcodeInfo(filePath, force);
+      const thumbnails = Array.isArray(info?.thumbnails)
+        ? info.thumbnails.slice()
+        : [];
+
+      if (!thumbnails.length) return "";
+
+      thumbnails.sort((a, b) =>
+        size === "small" ? a.area - b.area : b.area - a.area
+      );
+
+      return thumbnails[0]?.url || "";
+    }
+
+    /* G-code metadata ---------------------------------------------------- */
+    async function getGcodeMetadata(filePath, force = false) {
+      const normalized = normaliseLocalGcodePath(filePath);
+      if (!normalized) return null;
+
+      if (!force && gcodeMetadataCache.has(normalized)) {
+        return gcodeMetadataCache.get(normalized);
+      }
+
+      if (!force && gcodeMetadataPending.has(normalized)) {
+        return gcodeMetadataPending.get(normalized);
+      }
+
+      const promise = (async () => {
+        try {
+          const query = new URLSearchParams({ filename: normalized });
+          const payload = await fetchJson(`/server/files/metadata?${query.toString()}`);
+          const metadata = payload?.result ?? payload ?? null;
+          if (metadata && typeof metadata === "object") {
+            gcodeMetadataCache.set(normalized, metadata);
+            return metadata;
+          }
+        } catch {
+          // Metadata may not be ready immediately after upload. Silent retry
+          // is handled by the callers, avoiding log churn during video playback.
+        } finally {
+          gcodeMetadataPending.delete(normalized);
+        }
+        return null;
+      })();
+
+      gcodeMetadataPending.set(normalized, promise);
+      return promise;
+    }
+
+    function metadataFilamentWeight(metadata) {
+      if (!metadata || typeof metadata !== "object") return null;
+
+      const total = Number(firstDefined(
+        metadata.filament_weight_total,
+        metadata.filamentWeightTotal,
+        metadata.filament_weight,
+        metadata.filamentWeight
+      ));
+      if (Number.isFinite(total) && total > 0) return total;
+
+      const weights = firstDefined(
+        metadata.filament_weights,
+        metadata.filamentWeights
+      );
+
+      if (Array.isArray(weights)) {
+        const nums = weights.map(Number).filter(value => Number.isFinite(value) && value >= 0);
+        if (nums.length) return nums.reduce((sum, value) => sum + value, 0);
+      }
+
+      if (weights !== undefined && weights !== null && weights !== "") {
+        return sumNumericList(weights);
+      }
+
+      return null;
+    }
+
+    function metadataLayerHeight(metadata) {
+      const value = Number(firstDefined(
+        metadata?.layer_height,
+        metadata?.layerHeight
+      ));
+      return Number.isFinite(value) && value > 0 ? value : null;
+    }
+
+    function metadataThumbnailCandidates(metadata, filePath, size = "small") {
+      const thumbnails = Array.isArray(metadata?.thumbnails)
+        ? metadata.thumbnails.slice()
+        : [];
+
+      if (!thumbnails.length) return [];
+
+      thumbnails.sort((a, b) => {
+        const areaA = (Number(a?.width) || 0) * (Number(a?.height) || 0);
+        const areaB = (Number(b?.width) || 0) * (Number(b?.height) || 0);
+        return size === "small" ? areaA - areaB : areaB - areaA;
       });
 
-      return list.find(item =>
-        (Number(item?.width) || 0) >= 160 &&
-        (Number(item?.height) || 0) >= 120
-      ) || list[list.length - 1];
+      const parent = dirnamePath(normaliseLocalGcodePath(filePath));
+
+      return uniqueStrings(thumbnails.map(item => {
+        const relative = item?.relative_path || item?.path;
+        if (!relative) return "";
+
+        const joined = joinRelativePath(parent, relative);
+        if (!joined) return "";
+        return `/server/files/gcodes/${encodeGcodePath(joined)}`;
+      }));
     }
 
-    function thumbnailUrlFromDetails(items) {
-      const thumbnail = chooseThumbnail(items);
-      const path = thumbnail?.thumbnail_path;
-      if (!path) return "";
-      return `/server/files/gcodes/${encodeGcodePath(path)}`;
+    async function resolveMetadataPreviewUrl(filePath, size = "small", force = false) {
+      const metadata = await getGcodeMetadata(filePath, force);
+      if (!metadata) return "";
+
+      for (const url of metadataThumbnailCandidates(metadata, filePath, size)) {
+        try {
+          return await preloadImage(url, 2500);
+        } catch {}
+      }
+      return "";
     }
 
-    function thumbnailUrlFromMetadata(metadata, filePath) {
-      const thumbnail = chooseThumbnail(metadata?.thumbnails);
-      const relative = thumbnail?.relative_path || thumbnail?.path;
-      if (!relative) return "";
-
-      // metadata.relative_path is relative to the gcode file's parent folder.
-      const joined = joinRelativePath(dirnamePath(filePath), relative);
-      return joined ? `/server/files/gcodes/${encodeGcodePath(joined)}` : "";
+    /* Creality local_gcode previews -------------------------------------- */
+    function basenamePath(value) {
+      return String(value || "").replace(/\\/g, "/").split("/").filter(Boolean).pop() || "";
     }
 
-    async function getCurrentPrintThumbnailUrl(filePath) {
+    function stripGcodeExtension(value) {
+      return String(value || "").replace(/\.(gcode|gco|gc)$/i, "");
+    }
+
+    function localGcodeCatalogKeys(value) {
+      const normalized = normaliseLocalGcodePath(value).toLowerCase();
+      const basename = basenamePath(normalized).toLowerCase();
+      const stem = stripGcodeExtension(basename).toLowerCase();
+
+      const relaxed = input => String(input || "")
+        .toLowerCase()
+        .replace(/\.(gcode|gco|gc)$/i, "")
+        .replace(/[_\s]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return [...new Set([
+        normalized,
+        basename,
+        stem,
+        relaxed(normalized),
+        relaxed(basename),
+        relaxed(stem)
+      ].filter(Boolean))];
+    }
+
+    function updateLocalGcodeCatalog(items) {
+      if (!Array.isArray(items)) return;
+
+      for (const item of items) {
+        if (!item || typeof item !== "object") continue;
+
+        const path = findDeepObjectValue(
+          item,
+          ["path", "filename", "file", "gcode", "gcodePath", "filePath"]
+        ) || item.name || "";
+
+        const name = findDeepObjectValue(
+          item,
+          ["name", "filename", "gcodename", "gcodeName"]
+        ) || basenamePath(path);
+
+        if (!path && !name) continue;
+
+        // Preserve the whole response object so fields such as materialUsed
+        // can still be found even when a firmware nests them in metadata/info.
+        const record = { ...item, path, name };
+        for (const key of localGcodeCatalogKeys(path || name)) {
+          localGcodeCatalog.set(key, record);
+        }
+        for (const key of localGcodeCatalogKeys(name)) {
+          localGcodeCatalog.set(key, record);
+        }
+      }
+
+      // reqGcodeFile often arrives after the Moonraker /server/files/list
+      // response. Re-enrich the cards that are already on screen.
+      refreshVisibleLocalFileFilamentWeights();
+    }
+
+    function findLocalGcodeInfo(filePath) {
+      for (const key of localGcodeCatalogKeys(filePath)) {
+        const hit = localGcodeCatalog.get(key);
+        if (hit) return hit;
+      }
+      return null;
+    }
+
+    function encodeWebPath(path) {
+      return String(path || "")
+        .replace(/\\/g, "/")
+        .split("/")
+        .filter(Boolean)
+        .map(part => encodeURIComponent(part))
+        .join("/");
+    }
+
+    function crealityDownloadUrl(kind, fileName) {
+      const safeName = basenamePath(fileName);
+      if (!safeName) return "";
+      // K2 web-server on port 80 exposes /downloads/. Using an absolute URL
+      // avoids routing through Fluidd/nginx on port 4408.
+      return `http://${printerAddress}/downloads/${kind}/${encodeURIComponent(safeName)}`;
+    }
+
+    function localPathToCrealityDownloadUrl(localPath) {
+      const path = String(localPath || "").replace(/\\/g, "/");
+      let match = path.match(/\/local_gcode\/(original|humbnail)\/(.+)$/i);
+      if (!match) match = path.match(/\/(original|humbnail)\/(.+)$/i);
+      if (!match) return "";
+      return `http://${printerAddress}/downloads/${match[1].toLowerCase()}/${encodeWebPath(match[2])}`;
+    }
+
+    function derivedPreviewFileName(filePath) {
+      const base = stripGcodeExtension(basenamePath(filePath));
+      return base ? `${base}.png` : "";
+    }
+
+    function uniqueStrings(values) {
+      return [...new Set(values.filter(Boolean))];
+    }
+
+    function getCrealityPreviewCandidates(filePath, size = "large") {
+      const info = findLocalGcodeInfo(filePath);
+      const pngName = derivedPreviewFileName(info?.name || filePath);
+
+      const exactLarge = localPathToCrealityDownloadUrl(info?.preview);
+      const exactSmall = localPathToCrealityDownloadUrl(info?.thumbnail);
+
+      const derivedLarge = crealityDownloadUrl("original", pngName);
+      const derivedSmall = crealityDownloadUrl("humbnail", pngName);
+
+      return size === "small"
+        ? uniqueStrings([exactSmall, derivedSmall, exactLarge, derivedLarge])
+        : uniqueStrings([exactLarge, derivedLarge, exactSmall, derivedSmall]);
+    }
+
+    function preloadImage(url, timeoutMs = 3000) {
+      return new Promise((resolve, reject) => {
+        const probe = new Image();
+        let settled = false;
+
+        const finish = (ok, error = null) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          probe.onload = null;
+          probe.onerror = null;
+          if (ok && probe.naturalWidth > 0 && probe.naturalHeight > 0) resolve(url);
+          else reject(error || new Error("图片不可用"));
+        };
+
+        const timer = setTimeout(
+          () => finish(false, new Error("加载超时")),
+          timeoutMs
+        );
+
+        probe.onload = () => finish(true);
+        probe.onerror = () => finish(false, new Error("图片加载失败"));
+        probe.src = url;
+      });
+    }
+
+    function currentPrintImageUrl(filePath) {
       const normalized = normaliseLocalGcodePath(filePath);
       if (!normalized) return "";
 
-      const cached = gcodeThumbnailCache.get(normalized);
-      if (cached !== undefined) return cached || "";
+      // Real K2 source file:
+      //   /tmp/creality/original/current_print_image.png
+      // Firmware exposes /tmp/creality/original through:
+      //   /downloads/original/
+      //
+      // Add a changing retry token only while waiting for the file to appear.
+      return `http://${printerAddress}/downloads/original/current_print_image.png?retry=${Date.now()}`;
+    }
 
-      // Preferred Moonraker API: returns thumbnail_path relative to gcodes root.
-      try {
-        const payload = await fetchJson(
-          `/server/files/thumbnails?filename=${encodeURIComponent(normalized)}`
-        );
-        const items = payload?.result ?? payload;
-        const url = thumbnailUrlFromDetails(items);
-        if (url) {
-          gcodeThumbnailCache.set(normalized, url);
-          log(`当前打印预览图 → ${url}`);
-          return url;
+    async function resolveCurrentPrintPreviewUrl(filePath) {
+      const normalized = normaliseLocalGcodePath(filePath);
+      if (!normalized) return "";
+
+      const cacheKey = `current:${normalized}`;
+      const cached = previewUrlCache.get(cacheKey);
+      if (cached) return cached;
+
+      // The current preview can be generated a few seconds after the print
+      // starts. A failed first request must NOT be cached permanently.
+      const now = Date.now();
+      if (now < currentPrintPreviewRetryAt) return "";
+      currentPrintPreviewRetryAt = now + 8000;
+
+      const candidates = uniqueStrings([
+        currentPrintImageUrl(normalized),
+        ...getCrealityPreviewCandidates(normalized, "large")
+      ]);
+
+      for (const url of candidates) {
+        try {
+          const working = await preloadImage(url, 2200);
+          previewUrlCache.set(cacheKey, working);
+          currentPrintPreviewRetryAt = 0;
+          return working;
+        } catch {
+          // Silent: missing image while a print is starting is normal.
         }
-      } catch (error) {
-        log(`缩略图接口不可用，尝试 metadata：${error.message}`);
       }
 
-      // Compatibility fallback for older Moonraker versions.
-      try {
-        const payload = await fetchJson(
-          `/server/files/metadata?filename=${encodeURIComponent(normalized)}`
-        );
-        const metadata = payload?.result ?? payload ?? null;
-        const url = thumbnailUrlFromMetadata(metadata, normalized);
-        gcodeThumbnailCache.set(normalized, url || "");
-        if (url) log(`当前打印预览图(metadata) → ${url}`);
-        return url || "";
-      } catch (error) {
-        log(`读取 G-code 缩略图失败 ${normalized}：${error.message}`);
-        gcodeThumbnailCache.set(normalized, "");
-        return "";
+      const embeddedUrl = await resolveDirectGcodeThumbnail(normalized, "large");
+      if (embeddedUrl) {
+        previewUrlCache.set(cacheKey, embeddedUrl);
+        currentPrintPreviewRetryAt = 0;
+        return embeddedUrl;
       }
+
+      return "";
+    }
+
+
+    async function resolvePreviewUrl(filePath, size = "large") {
+      const normalized = normaliseLocalGcodePath(filePath);
+      if (!normalized) return "";
+
+      const cacheKey = `${size}:${normalized}`;
+      const cached = previewUrlCache.get(cacheKey);
+      if (cached) return cached;
+
+      const now = Date.now();
+      const retryKey = `preview:${cacheKey}`;
+      if (now < (previewRetryAt.get(retryKey) || 0)) return "";
+
+      // A new upload may need a few seconds before Creality generates its
+      // humbnail PNG or Moonraker extracts the embedded thumbnail.
+      previewRetryAt.set(retryKey, now + 5000);
+
+      const candidates = getCrealityPreviewCandidates(normalized, size);
+
+      for (const url of candidates) {
+        try {
+          const working = await preloadImage(url, 2200);
+          previewUrlCache.set(cacheKey, working);
+          previewRetryAt.delete(retryKey);
+          return working;
+        } catch {}
+      }
+
+      // Important fallback for newly uploaded files: Moonraker reads the
+      // thumbnails embedded in the actual G-code, independent of Creality's
+      // local_gcode JSON and humbnail generation.
+      const metadataUrl = await resolveMetadataPreviewUrl(normalized, size);
+      if (metadataUrl) {
+        previewUrlCache.set(cacheKey, metadataUrl);
+        previewRetryAt.delete(retryKey);
+        return metadataUrl;
+      }
+
+      // Final and most robust fallback: decode the PNG embedded directly in
+      // OrcaSlicer's THUMBNAIL_BLOCK. This works immediately after upload.
+      const embeddedUrl = await resolveDirectGcodeThumbnail(normalized, size);
+      if (embeddedUrl) {
+        previewUrlCache.set(cacheKey, embeddedUrl);
+        previewRetryAt.delete(retryKey);
+        return embeddedUrl;
+      }
+
+      return "";
+    }
+
+
+    function clearCurrentPrintThumbnail() {
+      printThumbImage.hidden = true;
+      printThumbImage.removeAttribute("src");
+      printThumbPlaceholder.hidden = false;
+      printThumbElement.classList.remove("has-image", "is-loading");
+    }
+
+    function showCurrentPrintThumbnail(url) {
+      printThumbImage.src = url;
+      printThumbImage.hidden = false;
+      printThumbPlaceholder.hidden = true;
+      printThumbElement.classList.remove("is-loading");
+      printThumbElement.classList.add("has-image");
     }
 
     async function updateCurrentPrintThumbnail(filePath, displayName = "") {
@@ -2488,24 +4027,57 @@
 
       if (!normalized) {
         currentPrintThumbnailPath = "";
-        setCurrentPrintThumbnail("", "");
+        currentPrintPreviewRetryAt = 0;
+        clearCurrentPrintThumbnail();
         return;
       }
 
-      // Don't repeatedly hit Moonraker on every telemetry update.
-      if (normalized === currentPrintThumbnailPath) return;
+      const sameJob = normalized === currentPrintThumbnailPath;
+      if (sameJob && !printThumbImage.hidden) return;
+      if (sameJob && Date.now() < currentPrintPreviewRetryAt) return;
 
-      currentPrintThumbnailPath = normalized;
-      setCurrentPrintThumbnail("", displayName);
-
-      const thumbnailUrl = await getCurrentPrintThumbnailUrl(normalized);
-      if (requestId !== currentPrintThumbnailRequestId) return;
-
-      if (thumbnailUrl) {
-        setCurrentPrintThumbnail(thumbnailUrl, displayName || getFileName(normalized));
-      } else {
-        setCurrentPrintThumbnail("", displayName || getFileName(normalized));
+      if (!sameJob) {
+        currentPrintThumbnailPath = normalized;
+        currentPrintPreviewRetryAt = 0;
+        previewUrlCache.delete(`current:${normalized}`);
+        clearCurrentPrintThumbnail();
       }
+
+      const url = await resolveCurrentPrintPreviewUrl(normalized);
+      if (requestId != currentPrintThumbnailRequestId) return;
+
+      if (url) {
+        showCurrentPrintThumbnail(url);
+      } else {
+        // Keep the placeholder and quietly retry later.
+        clearCurrentPrintThumbnail();
+      }
+    }
+
+
+    async function hydrateFileCardThumbnail(img, record) {
+      if (!img || !record?.path) return;
+
+      const url = await resolvePreviewUrl(record.path, "small");
+      if (!url || !img.isConnected) return;
+
+      img.onload = () => {
+        img.classList.add("ready");
+        img.closest(".file-card-thumb")?.classList.add("has-image");
+      };
+      img.onerror = () => {
+        img.removeAttribute("src");
+        img.classList.remove("ready");
+      };
+      img.src = url;
+    }
+
+    function hydrateVisibleFileThumbnails() {
+      document.querySelectorAll("#filesContent .file-card-thumb-image").forEach(img => {
+        const card = img.closest(".file-card");
+        const record = getFileRecord(card?.dataset.fileIndex);
+        if (record) hydrateFileCardThumbnail(img, record);
+      });
     }
 
     /* Rendering ---------------------------------------------------------- */
@@ -2523,27 +4095,53 @@
 
       printProgressElement.textContent = `${Math.round(progress)}%`;
       progressBar.style.width = `${progress}%`;
+
+      // 模型预览液位直接跟随打印进度，不使用定时器或 Canvas。
+      // 仅更新 height CSS 变量，动画由浏览器合成层完成。
+      printWaveElement.style.setProperty("--wave-progress", `${progress}%`);
+
       printFileElement.textContent = telemetryReady ? fileName : "正在等待打印机数据...";
       printFileElement.title = telemetryReady ? fileName : "";
 
       if (telemetryReady && printerState.printFileName) {
         updateCurrentPrintThumbnail(printerState.printFileName, fileName);
+        hydrateCurrentPrintMetadata(printerState.printFileName);
       } else if (!printerState.printFileName) {
         updateCurrentPrintThumbnail("", "");
+        hydrateCurrentPrintMetadata("");
       }
-      printLayerElement.textContent = `${layer} / ${totalLayer} 层`;
-      printTimeElement.textContent = `${formatDuration(elapsed)} / ${formatDuration(remaining)}`;
+      printLayerElement.textContent = `${layer} / ${totalLayer}`;
+      printElapsedCompactElement.textContent = formatCompactElapsed(elapsed);
+      printRemainingCompactElement.textContent = formatCompactRemaining(remaining);
+
+      const filamentWeight = currentPrintFilamentWeight();
+      printFilamentWeightElement.textContent = filamentWeight == null
+        ? "--g"
+        : `${filamentWeight.toFixed(2)}g`;
 
       if (remaining > 0) {
         const eta = new Date(Date.now() + remaining * 1000);
-        printEtaElement.textContent = `预计完成时间：${eta.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+        const month = String(eta.getMonth() + 1).padStart(2, "0");
+        const day = String(eta.getDate()).padStart(2, "0");
+        const hours = String(eta.getHours()).padStart(2, "0");
+        const minutes = String(eta.getMinutes()).padStart(2, "0");
+        printEtaElement.textContent = `预计完成时间：${month}/${day} ${hours}:${minutes}`;
       } else {
         printEtaElement.textContent = "预计完成时间：--:--";
       }
 
-      pauseResumeButton.textContent = state.key === "paused" ? "继续" : "暂停";
+      const paused = state.key === "paused";
+      pauseResumeIcon.textContent = paused ? "▶" : "Ⅱ";
+      pauseResumeLabel.textContent = paused ? "继续" : "暂停";
+      pauseResumeButton.title = paused ? "继续打印" : "暂停打印";
+      pauseResumeButton.setAttribute("aria-label", pauseResumeButton.title);
       pauseResumeButton.disabled = !["printing", "paused"].includes(state.key);
       stopPrintButton.disabled = !["printing", "paused", "processing"].includes(state.key);
+
+      const showWave = telemetryReady
+        && Boolean(printerState.printFileName)
+        && ["printing", "paused", "processing", "completed"].includes(state.key);
+      printWaveElement.hidden = !showWave;
 
       nozzleCurrentElement.textContent = formatTemperature(printerState.nozzleTemp);
       bedCurrentElement.textContent = formatTemperature(printerState.bedTemp0);
@@ -3220,12 +4818,44 @@
         .replaceAll("'", "&#039;");
     }
 
+    function trimDecimal(value, digits = 3) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "--";
+      return number.toFixed(digits).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
     function formatFilamentLength(value) {
       const n = Number(value);
       if (!Number.isFinite(n) || n <= 0) return "--";
       // Moonraker metadata normally reports filament_total in millimetres.
-      if (n >= 100) return `${(n / 1000).toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}m`;
-      return `${n.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}m`;
+      if (n >= 100) return `${trimDecimal(n / 1000)}m`;
+      return `${trimDecimal(n)}m`;
+    }
+
+    function formatK2MaterialUsed(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) return "--";
+      // K2 local_gcode_file_info.json: materialUsed follows the printer's
+      // local scaling. Per this printer's discovered format, divide by 100.
+      return `${trimDecimal(n / 100)}m`;
+    }
+
+    function formatK2FilamentWeight(value) {
+      if (value === undefined || value === null || value === "") return "--";
+
+      // Multi-colour jobs may store one weight per material/tool:
+      // e.g. "12.34,5.67,8.90"
+      const values = String(value)
+        .split(/[,;]/)
+        .map(part => Number(part.trim()))
+        .filter(Number.isFinite);
+
+      if (!values.length) return "--";
+
+      const total = values.reduce((sum, number) => sum + number, 0);
+      if (!(total > 0)) return "--";
+
+      return `${trimDecimal(total, 2)}g`;
     }
 
     function getFileRecord(index) {
@@ -3409,7 +5039,13 @@
         let a = null;
         let b = null;
 
-        if (key === "size") {
+        if (key === "filename") {
+          return String(left.fullName || "").localeCompare(
+            String(right.fullName || ""),
+            "zh-CN",
+            { numeric: true, sensitivity: "base" }
+          ) * direction;
+        } else if (key === "size") {
           a = fileNumericValue(left.size);
           b = fileNumericValue(right.size);
         } else if (key === "layerHeight") {
@@ -3455,7 +5091,7 @@
     }
 
     function toggleFileSort(key) {
-      if (!["size", "layerHeight", "modified"].includes(key)) return;
+      if (!["filename", "size", "layerHeight", "modified"].includes(key)) return;
 
       const selectedPaths = new Set(
         getSelectedFileRecords().map(record => record.path)
@@ -3469,6 +5105,239 @@
       }
 
       renderFileList(currentFileSourceItems, selectedPaths);
+    }
+
+    function firstDefined(...values) {
+      return values.find(value => value !== undefined && value !== null && value !== "");
+    }
+
+    function normalizedLayerHeight(item, catalogInfo) {
+      const direct = firstDefined(
+        item?.layer_height,
+        item?.layerHeight,
+        item?.layerHeightMm,
+        item?.layer
+      );
+      if (direct !== undefined) return direct;
+
+      const floorHeight = Number(catalogInfo?.floorHeight);
+      // K2 local_gcode_file_info uses hundredths of a millimetre:
+      // 20 -> 0.20mm, 25 -> 0.25mm.
+      if (Number.isFinite(floorHeight) && floorHeight > 0) {
+        return floorHeight >= 2 ? floorHeight / 100 : floorHeight;
+      }
+      return "";
+    }
+
+    function buildLocalFileRecord(item, index) {
+      const rawPath = typeof item === "string" ? item :
+        findObjectValue(item, ["path", "filename", "name", "file", "gcode"]) ?? "";
+
+      const path = normaliseLocalGcodePath(rawPath);
+      const fullName = basenamePath(path || rawPath) || "未命名.gcode";
+      const catalogInfo = findLocalGcodeInfo(path || fullName) || {};
+
+      const size = typeof item === "object"
+        ? firstDefined(item.size, item.fileSize, item.file_size, catalogInfo.file_size)
+        : catalogInfo.file_size;
+
+      const modified = typeof item === "object"
+        ? firstDefined(
+            item.modified, item.mtime, item.time, item.date,
+            item.createTime, item.created, item.create_time,
+            catalogInfo.create_time
+          )
+        : catalogInfo.create_time;
+
+      const layerHeight = normalizedLayerHeight(
+        typeof item === "object" ? item : {},
+        catalogInfo
+      );
+
+      const filamentWeight = firstDefined(
+        typeof item === "object"
+          ? findDeepObjectValue(item, ["filamentWeight", "filament_weight"])
+          : undefined,
+        findDeepObjectValue(catalogInfo, ["filamentWeight", "filament_weight"])
+      );
+
+      // Retain materialUsed internally because it is useful elsewhere
+      // (e.g. weight estimation fallback for current-print telemetry), but
+      // local-file cards now display filamentWeight directly.
+      const k2MaterialUsed = firstDefined(
+        typeof item === "object"
+          ? findDeepObjectValue(item, ["materialUsed", "material_used"])
+          : undefined,
+        findDeepObjectValue(catalogInfo, ["materialUsed", "material_used"])
+      );
+
+      const filamentWeightText = formatK2FilamentWeight(filamentWeight);
+
+      let layerText = "--";
+      if (layerHeight !== undefined && layerHeight !== null && layerHeight !== "") {
+        const layerNumber = Number(layerHeight);
+        layerText = Number.isFinite(layerNumber)
+          ? `${layerNumber.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}mm`
+          : String(layerHeight);
+      }
+
+      return {
+        index,
+        raw: item,
+        catalogInfo,
+        path,
+        fullName,
+        size,
+        modified,
+        layerHeight,
+        layerText,
+        filamentWeight,
+        filamentWeightText,
+        k2MaterialUsed
+      };
+    }
+
+    function resolveRecordFilamentWeightText(record) {
+      if (!record) return "--";
+
+      const catalog = findLocalGcodeInfo(record.path || record.fullName) || record.catalogInfo || {};
+
+      const weight = firstDefined(
+        findDeepObjectValue(record.raw, ["filamentWeight", "filament_weight"]),
+        findDeepObjectValue(catalog, ["filamentWeight", "filament_weight"])
+      );
+
+      const text = formatK2FilamentWeight(weight);
+      if (text !== "--") {
+        record.filamentWeight = weight;
+        record.filamentWeightText = text;
+        return text;
+      }
+
+      return record.filamentWeightText || "--";
+    }
+
+    function updateVisibleFileFilamentWeight(record, index) {
+      const card = document.querySelector(
+        `#filesContent .file-card[data-file-index="${index}"]`
+      );
+      const target = card?.querySelector("[data-file-filament-weight]");
+      if (!target) return;
+
+      target.textContent = `耗材质量: ${resolveRecordFilamentWeightText(record)}`;
+    }
+
+    function refreshVisibleLocalFileFilamentWeights() {
+      if (!Array.isArray(currentFileRecords) || !currentFileRecords.length) return;
+
+      currentFileRecords.forEach((record, index) => {
+        updateVisibleFileFilamentWeight(record, index);
+      });
+    }
+
+
+    function updateVisibleFileMetadata(record, index) {
+      const card = document.querySelector(
+        `#filesContent .file-card[data-file-index="${index}"]`
+      );
+      if (!card || !record) return;
+
+      const weightTarget = card.querySelector("[data-file-filament-weight]");
+      if (weightTarget) {
+        weightTarget.textContent = `耗材质量: ${record.filamentWeightText || "--"}`;
+      }
+
+      const layerTarget = card.querySelector("[data-file-layer-height]");
+      if (layerTarget) {
+        layerTarget.textContent = `层高: ${record.layerText || "--"}`;
+      }
+    }
+
+    async function hydrateLocalFileMetadata(record, index) {
+      if (!record?.path) return;
+
+      const metadata = await getGcodeMetadata(record.path);
+      if (!metadata) return;
+
+      // 1. Moonraker metadata if available.
+      let weight = metadataFilamentWeight(metadata);
+      let layerHeight = metadataLayerHeight(metadata);
+
+      // 2. K2's Moonraker reports slicer=Unknown for these OrcaSlicer files,
+      // so parse the original G-code comments directly.
+      if (!(Number.isFinite(weight) && weight > 0)
+          || !(Number.isFinite(layerHeight) && layerHeight > 0)) {
+        const direct = await getDirectGcodeInfo(record.path);
+
+        if (!(Number.isFinite(weight) && weight > 0)
+            && Number.isFinite(direct?.weight) && direct.weight > 0) {
+          weight = direct.weight;
+        }
+
+        if (!(Number.isFinite(layerHeight) && layerHeight > 0)
+            && Number.isFinite(direct?.layerHeight) && direct.layerHeight > 0) {
+          layerHeight = direct.layerHeight;
+        }
+      }
+
+      if (Number.isFinite(weight) && weight > 0) {
+        record.filamentWeight = weight;
+        record.filamentWeightText = `${trimDecimal(weight, 2)}g`;
+      }
+
+      if (Number.isFinite(layerHeight) && layerHeight > 0) {
+        record.layerHeight = layerHeight;
+        record.layerText = `${trimDecimal(layerHeight, 3)}mm`;
+      }
+
+      updateVisibleFileMetadata(record, index);
+
+      // 3. Thumbnail. This also fixes the common race where a just-uploaded
+      // file initially has no Creality humbnail yet.
+      const img = document.querySelector(
+        `#filesContent .file-card[data-file-index="${index}"] .file-card-thumb-image`
+      );
+
+      if (img && !img.classList.contains("ready")) {
+        const url = await resolvePreviewUrl(record.path, "small");
+        if (url && img.isConnected) {
+          img.onload = () => {
+            img.classList.add("ready");
+            img.closest(".file-card-thumb")?.classList.add("has-image");
+          };
+          img.onerror = () => {
+            img.removeAttribute("src");
+            img.classList.remove("ready");
+          };
+          img.src = url;
+        }
+      }
+    }
+
+    function hydrateVisibleLocalFileMetadata() {
+      currentFileRecords.forEach((record, index) => {
+        hydrateLocalFileMetadata(record, index);
+      });
+
+      // Newly generated metadata/thumbnails can appear shortly after upload.
+      // Do one quiet delayed pass without creating a polling loop.
+      setTimeout(() => {
+        currentFileRecords.forEach(async (record, index) => {
+          if (!record?.path) return;
+
+          if (record.filamentWeightText === "--"
+              || record.layerText === "--"
+              || !document.querySelector(
+                `#filesContent .file-card[data-file-index="${index}"] .file-card-thumb-image.ready`
+              )) {
+            gcodeMetadataCache.delete(record.path);
+            directGcodeInfoCache.delete(record.path);
+            previewUrlCache.delete(`small:${record.path}`);
+            previewRetryAt.delete(`preview:small:${record.path}`);
+            await hydrateLocalFileMetadata(record, index);
+          }
+        });
+      }, 6000);
     }
 
     function renderFileList(items, selectedPaths = null) {
@@ -3501,46 +5370,7 @@
       }
 
       const files = items.slice(0, 100);
-
-      const mappedRecords = files.map((item, index) => {
-        const rawPath = typeof item === "string" ? item :
-          findObjectValue(item, ["path", "filename", "name", "file", "gcode"]) ?? JSON.stringify(item);
-
-        const path = normaliseLocalGcodePath(rawPath);
-        const fullName = String(path || rawPath || "").split(/[\\/]/).pop() || "未命名.gcode";
-        const size = typeof item === "object" ? findObjectValue(item, ["size", "fileSize"]) : "";
-        const modified = typeof item === "object"
-          ? findObjectValue(item, ["modified", "mtime", "time", "date", "createTime", "created"])
-          : "";
-
-        const layerHeight = typeof item === "object"
-          ? findObjectValue(item, ["layer_height", "layerHeight", "layerHeightMm", "layer"])
-          : "";
-
-        const filament = typeof item === "object"
-          ? findObjectValue(item, ["filament_total", "filamentTotal", "filament_length", "filamentLength", "materialLength"])
-          : "";
-
-        let layerText = "--";
-        if (layerHeight !== undefined && layerHeight !== null && layerHeight !== "") {
-          const layerNumber = Number(layerHeight);
-          layerText = Number.isFinite(layerNumber)
-            ? `${layerNumber.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")}mm`
-            : String(layerHeight);
-        }
-
-        return {
-          index,
-          raw: item,
-          path,
-          fullName,
-          size,
-          modified,
-          layerHeight,
-          layerText,
-          filament
-        };
-      });
+      const mappedRecords = files.map((item, index) => buildLocalFileRecord(item, index));
 
       currentFileRecords = sortFileRecords(mappedRecords).map((record, index) => ({
         ...record,
@@ -3552,15 +5382,18 @@
       target.className = "file-card-grid";
       target.innerHTML = currentFileRecords.map(record => `
           <article class="file-card" data-file-index="${record.index}">
-            <div class="file-card-thumb"><span>GCODE</span></div>
+            <div class="file-card-thumb">
+              <img class="file-card-thumb-image" alt="" aria-hidden="true">
+              <span class="file-card-thumb-placeholder">GCODE</span>
+            </div>
             <div class="file-card-info">
               <div class="file-card-name" title="${escapeHtml(record.fullName)}">${escapeHtml(record.fullName)}</div>
               <div class="file-card-meta">
-                <div>层高: ${escapeHtml(record.layerText)}</div>
+                <div data-file-layer-height>层高: ${escapeHtml(record.layerText)}</div>
                 <div>创建时间: ${escapeHtml(formatDate(record.modified))}</div>
               </div>
               <div class="file-card-meta right">
-                <div>耗材长度: ${escapeHtml(formatFilamentLength(record.filament))}</div>
+                <div data-file-filament-weight>耗材质量: ${escapeHtml(record.filamentWeightText || "--")}</div>
                 <div>文件大小: ${escapeHtml(formatBytes(record.size))}</div>
               </div>
             </div>
@@ -3577,6 +5410,9 @@
         check.addEventListener("change", updateFileSelectionUi);
       });
 
+      hydrateVisibleFileThumbnails();
+      refreshVisibleLocalFileFilamentWeights();
+      hydrateVisibleLocalFileMetadata();
       updateFileSelectionUi();
     }
 
@@ -3690,7 +5526,15 @@
             { method: "DELETE" }
           );
           success++;
-          gcodeThumbnailCache.delete(normaliseLocalGcodePath(record.path));
+          const changedPath = normaliseLocalGcodePath(record.path);
+          for (const size of ["large", "small", "current"]) {
+            previewUrlCache.delete(`${size}:${changedPath}`);
+          }
+          gcodeMetadataCache.delete(changedPath);
+          directGcodeInfoCache.delete(changedPath);
+          directGcodeInfoPending.delete(changedPath);
+          previewRetryAt.delete(`preview:small:${changedPath}`);
+          previewRetryAt.delete(`preview:large:${changedPath}`);
           log(`删除文件 → ${record.path}`);
         } catch (error) {
           failed.push(record.fullName);
@@ -3752,7 +5596,15 @@
               body: form
             });
             success++;
-            gcodeThumbnailCache.delete(normaliseLocalGcodePath(file.name));
+            const changedPath = normaliseLocalGcodePath(file.name);
+            for (const size of ["large", "small", "current"]) {
+              previewUrlCache.delete(`${size}:${changedPath}`);
+            }
+            gcodeMetadataCache.delete(changedPath);
+            directGcodeInfoCache.delete(changedPath);
+            directGcodeInfoPending.delete(changedPath);
+            previewRetryAt.delete(`preview:small:${changedPath}`);
+            previewRetryAt.delete(`preview:large:${changedPath}`);
             log(`导入文件 → ${file.name} (${file.size} bytes)`);
           } catch (error) {
             failed.push(file.name);
@@ -3787,59 +5639,679 @@
       else if (action === "delete") deleteLocalFiles([record]);
     }
 
-    function renderHistory(items) {
+    function archiveTimeValue(value) {
+      return fileTimeValue(value);
+    }
+
+    function formatArchiveDate(value) {
+      const time = archiveTimeValue(value);
+      if (!Number.isFinite(time)) return "--";
+      const date = new Date(time);
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      const hh = String(date.getHours()).padStart(2, "0");
+      const mi = String(date.getMinutes()).padStart(2, "0");
+      const ss = String(date.getSeconds()).padStart(2, "0");
+      return `${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+    function formatArchiveDuration(value) {
+      const seconds = Number(value);
+      if (!Number.isFinite(seconds) || seconds < 0) return "--";
+      const total = Math.round(seconds);
+      const hours = Math.floor(total / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      const secs = total % 60;
+      return `${hours}h:${minutes}m:${secs}s`;
+    }
+
+    async function hydrateArchiveThumbnail(img, gcodePath) {
+      if (!img || !gcodePath) return;
+      const url = await resolvePreviewUrl(gcodePath, "small");
+      if (!url || !img.isConnected) return;
+      img.onload = () => {
+        img.classList.add("ready");
+        img.closest(".archive-card-thumb")?.classList.add("has-image");
+      };
+      img.onerror = () => img.removeAttribute("src");
+      img.src = url;
+    }
+
+    function hydrateArchiveThumbnails(containerSelector, records) {
+      document.querySelectorAll(`${containerSelector} .archive-card-thumb img`).forEach(img => {
+        const card = img.closest(".archive-card");
+        const index = Number(card?.dataset.archiveIndex);
+        const record = records[index];
+        if (record?.gcodePath) hydrateArchiveThumbnail(img, record.gcodePath);
+      });
+    }
+
+    function normalizeHistoryRecord(item, index) {
+      const raw = item && typeof item === "object" ? item : {};
+      const fileValue = typeof item === "string" ? item :
+        firstDefined(
+          raw.filename, raw.name, raw.file, raw.path,
+          raw.printFileName, raw.gcode
+        ) || "打印任务";
+
+      const filename = getFileName(fileValue);
+      const localInfo = findLocalGcodeInfo(fileValue) || findLocalGcodeInfo(filename) || {};
+
+      const duration = Number(firstDefined(
+        raw.print_duration, raw.duration, raw.printJobTime,
+        raw.total_duration, raw.timeCost, raw.costTime
+      ));
+      const start = firstDefined(
+        raw.start_time, raw.startTime, raw.printStartTime,
+        raw.create_time, raw.createTime, raw.time, raw.date
+      );
+      let end = firstDefined(
+        raw.end_time, raw.endTime, raw.printEndTime,
+        raw.finishTime, raw.finish_time
+      );
+      if ((end === undefined || end === null || end === "") && Number.isFinite(duration)) {
+        const startMs = archiveTimeValue(start);
+        if (Number.isFinite(startMs)) end = (startMs + duration * 1000) / 1000;
+      }
+
+      const size = firstDefined(
+        raw.size, raw.file_size, raw.fileSize,
+        raw.metadata?.size, localInfo.file_size
+      );
+
+      const statusRaw = String(firstDefined(
+        raw.status, raw.state, raw.result, raw.printStatus
+      ) ?? "").toLowerCase();
+
+      const success = /complete|success|finish|done/.test(statusRaw)
+        || (!statusRaw && Number.isFinite(duration) && duration > 1);
+
+      const gcodePath = normaliseLocalGcodePath(
+        firstDefined(raw.path, raw.filename, localInfo.path, fileValue)
+      );
+
+      return {
+        index,
+        raw: item,
+        uid: String(firstDefined(raw.uid, raw.job_id, raw.jobId, raw.historyId, raw.id, raw.printId) ?? ""),
+        filename,
+        gcodePath,
+        size,
+        start,
+        end,
+        duration: Number.isFinite(duration) ? duration : 0,
+        success
+      };
+    }
+
+    function sortHistoryRecords(records) {
+      const { key, direction } = historySortState;
+      if (!key) return records;
+      return records.slice().sort((a, b) => {
+        let av, bv;
+        if (key === "filename") {
+          return String(a.filename).localeCompare(String(b.filename), "zh-CN", { numeric: true }) * direction;
+        }
+        if (key === "start") { av = archiveTimeValue(a.start); bv = archiveTimeValue(b.start); }
+        if (key === "end") { av = archiveTimeValue(a.end); bv = archiveTimeValue(b.end); }
+        if (key === "duration") { av = a.duration; bv = b.duration; }
+        if (key === "size") { av = fileNumericValue(a.size); bv = fileNumericValue(b.size); }
+        return compareFileSortValues(av, bv, direction);
+      });
+    }
+
+    function updateHistorySortUi() {
+      document.querySelectorAll("[data-history-sort]").forEach(button => {
+        const active = button.dataset.historySort === historySortState.key;
+        button.classList.toggle("active", active);
+        const mark = button.querySelector(".sort-mark");
+        if (mark) mark.textContent = active ? (historySortState.direction === 1 ? "↑" : "↓") : "⇅";
+      });
+    }
+
+    function updateHistorySelectionUi() {
+      const checks = Array.from(document.querySelectorAll("#historyContent .archive-card-check"));
+      const selected = checks.filter(check => check.checked).length;
+      checks.forEach(check => check.closest(".archive-card")?.classList.toggle("selected", check.checked));
+
+      $("#historySelectedCount").textContent = String(selected);
+      $("#historyTotalCount").textContent = String(checks.length);
+
+      const selectAll = $("#selectAllHistory");
+      selectAll.checked = checks.length > 0 && selected === checks.length;
+      selectAll.indeterminate = selected > 0 && selected < checks.length;
+
+      $("#exportSelectedHistory").disabled = selected === 0;
+      $("#deleteSelectedHistory").disabled = selected === 0;
+    }
+
+    function selectedHistoryRecords() {
+      return Array.from(document.querySelectorAll("#historyContent .archive-card-check:checked"))
+        .map(check => historyRecords[Number(check.closest(".archive-card")?.dataset.archiveIndex)])
+        .filter(Boolean);
+    }
+
+    function renderHistory(items, selectedKeys = null) {
       const target = $("#historyContent");
-      if (!Array.isArray(items) || !items.length) {
+      historySourceItems = Array.isArray(items) ? items.slice(0, 100) : [];
+
+      if (!historySourceItems.length) {
+        historyRecords = [];
         target.className = "empty-state";
         target.innerHTML = `<div><strong>没有找到历史记录</strong>或者当前固件没有返回历史任务。</div>`;
+        $("#historySelectedCount").textContent = "0";
+        $("#historyTotalCount").textContent = "0";
+        updateHistorySortUi();
         return;
       }
 
-      target.className = "data-list";
-      target.innerHTML = items.slice(0, 80).map(item => {
-        const file = typeof item === "string" ? item :
-          findObjectValue(item, ["filename", "name", "file", "path", "printFileName"]) ?? "打印任务";
-        const status = typeof item === "object" ?
-          findObjectValue(item, ["status", "state", "result", "printStatus"]) ?? "" : "";
-        const start = typeof item === "object" ?
-          findObjectValue(item, ["start_time", "startTime", "time", "date", "printStartTime"]) ?? "" : "";
-        const duration = typeof item === "object" ?
-          findObjectValue(item, ["print_duration", "duration", "printJobTime"]) : "";
-        return `
-          <div class="data-row">
-            <div class="data-main">
-              <div class="data-title">${escapeHtml(getFileName(file))}</div>
-              <div class="data-sub">${escapeHtml(String(status))}</div>
+      const mapped = historySourceItems.map((item, index) => normalizeHistoryRecord(item, index));
+      historyRecords = sortHistoryRecords(mapped).map((record, index) => ({ ...record, index }));
+
+      target.className = "archive-grid";
+      target.innerHTML = historyRecords.map(record => `
+        <article class="archive-card" data-archive-index="${record.index}">
+          <div class="archive-card-thumb">
+            <img alt="" aria-hidden="true">
+            <span class="archive-thumb-placeholder">GCODE</span>
+          </div>
+          <div class="archive-card-body">
+            <div class="archive-title-row">
+              <span class="archive-status-dot ${record.success ? "success" : "warning"}">${record.success ? "✓" : "!"}</span>
+              <div class="archive-card-title" title="${escapeHtml(record.filename)}">${escapeHtml(record.filename)}</div>
             </div>
-            <div class="data-side">${escapeHtml(formatDate(start))}${duration !== undefined && duration !== "" ? `<br>${escapeHtml(formatDuration(duration))}` : ""}</div>
-          </div>`;
-      }).join("");
+            <div></div>
+            <div class="archive-meta-grid">
+              <div>打印时长: ${escapeHtml(formatArchiveDuration(record.duration))}</div>
+              <div class="right">大小: ${escapeHtml(formatBytes(record.size))}</div>
+              <div>开始: ${escapeHtml(formatArchiveDate(record.start))}</div>
+              <div class="right">结束: ${escapeHtml(formatArchiveDate(record.end))}</div>
+            </div>
+          </div>
+          <input class="archive-card-check" type="checkbox"
+                 ${selectedKeys?.has(record.uid || `${record.filename}|${record.start}`) ? "checked" : ""}
+                 aria-label="选择 ${escapeHtml(record.filename)}">
+        </article>`).join("");
+
+      target.querySelectorAll(".archive-card").forEach(card => {
+        card.addEventListener("contextmenu", event => showHistoryContextMenu(event, card));
+      });
+      target.querySelectorAll(".archive-card-check").forEach(check => {
+        check.addEventListener("change", updateHistorySelectionUi);
+      });
+
+      hydrateArchiveThumbnails("#historyContent", historyRecords);
+      updateHistorySortUi();
+      updateHistorySelectionUi();
     }
 
-    function renderTimelapse(items) {
+    function toggleHistorySort(key) {
+      const selected = new Set(selectedHistoryRecords().map(record => record.uid || `${record.filename}|${record.start}`));
+      if (historySortState.key === key) historySortState.direction *= -1;
+      else {
+        historySortState.key = key;
+        historySortState.direction = 1;
+      }
+      renderHistory(historySourceItems, selected);
+    }
+
+    function hideHistoryContextMenu() {
+      $("#historyContextMenu").hidden = true;
+      historyContextTargetIndex = -1;
+    }
+
+    function showHistoryContextMenu(event, card) {
+      event.preventDefault();
+      const index = Number(card?.dataset.archiveIndex);
+      const record = historyRecords[index];
+      if (!record) return;
+
+      const check = card.querySelector(".archive-card-check");
+      if (check && !check.checked) {
+        document.querySelectorAll("#historyContent .archive-card-check").forEach(item => item.checked = false);
+        check.checked = true;
+        updateHistorySelectionUi();
+      }
+
+      historyContextTargetIndex = index;
+      const localRecord = findLocalGcodeInfo(record.gcodePath || record.filename);
+      $("#historyReprintAction").disabled = !localRecord && !record.gcodePath;
+
+      positionArchiveContextMenu($("#historyContextMenu"), event.clientX, event.clientY);
+    }
+
+    function historyExportRecord(record) {
+      if (!record) return;
+      const localRecord = findLocalGcodeInfo(record.gcodePath || record.filename);
+      const path = normaliseLocalGcodePath(localRecord?.path || record.gcodePath || record.filename);
+      if (!path) {
+        showToast("对应的 G-code 文件已不存在");
+        return;
+      }
+      exportLocalFile({ path, fullName: getFileName(path) });
+    }
+
+    function historyReprintRecord(record) {
+      if (!record) return;
+      const localRecord = findLocalGcodeInfo(record.gcodePath || record.filename);
+      const path = normaliseLocalGcodePath(localRecord?.path || record.gcodePath || "");
+      if (!path) {
+        showToast("原 G-code 文件已不存在，无法重新打印");
+        return;
+      }
+      startLocalPrint({ path, fullName: getFileName(path) });
+    }
+
+    async function deleteHistoryRecords(records) {
+      const clean = (records || []).filter(Boolean);
+      if (!clean.length) return;
+      if (!confirm(`确定删除 ${clean.length} 条历史记录吗？此操作无法撤销。`)) return;
+
+      let success = 0;
+      for (const record of clean) {
+        let deleted = false;
+
+        if (record.uid) {
+          try {
+            await requestMoonraker(
+              `/server/history/job?uid=${encodeURIComponent(record.uid)}`,
+              { method: "DELETE" }
+            );
+            deleted = true;
+          } catch {}
+        }
+
+        if (!deleted) {
+          const identifier = record.uid || firstDefined(
+            record.raw?.id, record.raw?.historyId,
+            record.raw?.printId, record.raw?.startTime,
+            record.raw?.start_time
+          );
+          if (identifier !== undefined && identifier !== null && identifier !== "") {
+            deleted = sendSet({ deleteHistory: identifier }, true);
+          }
+        }
+
+        if (deleted) success++;
+      }
+
+      showToast(`已提交删除 ${success} / ${clean.length} 条历史记录`);
+      setTimeout(refreshHistory, 500);
+    }
+
+    function normalizeTimelapseCoverPath(value, videoId = "") {
+      let path = String(value || "").trim().replace(/\\/g, "/");
+      if (path.startsWith("/mnt/")) return path;
+
+      const id = String(videoId || "").replace(/\D/g, "");
+      if (id) {
+        return `/mnt/UDISK/creality/userdata/delay_image/cover/${id}.png`;
+      }
+      return "";
+    }
+
+    function buildTimelapseCoverCandidates(localCoverPath) {
+      const path = String(localCoverPath || "").trim();
+      if (!path) return [];
+
+      const basename = basenamePath(path);
+      return uniqueStrings([
+        // K2 path style analogous to /downloads/video/: encode the complete
+        // absolute filesystem path as a single URL component.
+        `http://${printerAddress}/downloads/cover/${encodeURIComponent(path)}`,
+        // Firmware variants may expose the cover directory directly.
+        `http://${printerAddress}/downloads/cover/${encodeURIComponent(basename)}`
+      ]);
+    }
+
+    async function resolveTimelapseCoverUrl(record) {
+      const cacheKey = `timelapse-cover:${record.videoName}`;
+      if (previewUrlCache.has(cacheKey)) return previewUrlCache.get(cacheKey) || "";
+
+      for (const url of buildTimelapseCoverCandidates(record.coverPath)) {
+        try {
+          const working = await preloadImage(url, 2500);
+          previewUrlCache.set(cacheKey, working);
+          return working;
+        } catch {}
+      }
+
+      previewUrlCache.set(cacheKey, "");
+      return "";
+    }
+
+    async function hydrateTimelapseCover(img, record) {
+      if (!img || !record) return;
+
+      // delay_image_info.json's cover is the authoritative timelapse preview.
+      let url = await resolveTimelapseCoverUrl(record);
+
+      // If a firmware version doesn't expose cover over HTTP, keep the
+      // existing G-code model thumbnail as a graceful fallback.
+      if (!url && record.gcodePath) {
+        url = await resolvePreviewUrl(record.gcodePath, "small");
+      }
+
+      if (!url || !img.isConnected) return;
+
+      img.onload = () => {
+        img.classList.add("ready");
+        img.closest(".archive-card-thumb")?.classList.add("has-image");
+      };
+      img.onerror = () => img.removeAttribute("src");
+      img.src = url;
+    }
+
+    function normalizeTimelapseVideoPath(value, videoName) {
+      let path = String(value || "").trim();
+
+      // A returned URL may already contain the encoded absolute path.
+      if (/^https?:\/\//i.test(path)) {
+        try {
+          const url = new URL(path);
+          const marker = "/downloads/video/";
+          const pos = url.pathname.indexOf(marker);
+          if (pos >= 0) {
+            const encoded = url.pathname.slice(pos + marker.length);
+            const decoded = decodeURIComponent(encoded);
+            if (decoded.startsWith("/")) return decoded;
+          }
+        } catch {}
+      }
+
+      path = path.replace(/\\/g, "/");
+      if (path.startsWith("/mnt/")) return path;
+
+      return `/mnt/UDISK/creality/userdata/delay_image/video/${videoName}`;
+    }
+
+    function buildTimelapseVideoUrl(localVideoPath) {
+      const path = String(localVideoPath || "").trim();
+      if (!path) return "";
+      // K2 expects the ENTIRE absolute local path as one URL-encoded component.
+      return `http://${printerAddress}/downloads/video/${encodeURIComponent(path)}`;
+    }
+
+    function normalizeTimelapseRecord(item, index) {
+      const raw = item && typeof item === "object" ? item : {};
+
+      // Exact stock K2 delay_image_info.json keys:
+      // name, video, size, duration, cover, starttime, gcodename, videoname.
+      const rawVideoPath = firstDefined(
+        raw.video,
+        raw.videoPath, raw.video_path, raw.path, raw.filePath,
+        raw.file, raw.filename, raw.videoName, raw.video_name,
+        raw.videoname, raw.name
+      ) || "";
+
+      const videoName = getFileName(
+        firstDefined(raw.videoname, raw.videoName, raw.video_name, rawVideoPath)
+      ) || "延时摄影.mp4";
+
+      const rawGcode = firstDefined(
+        raw.gcodename,
+        raw.gcode, raw.gcodeName, raw.gcode_name,
+        raw.printFileName, raw.print_file_name,
+        raw.model, raw.modelName, raw.sourceFile,
+        raw.source_file, raw.gcodeFile,
+        raw.name
+      ) || "";
+
+      const gcode = getFileName(rawGcode) || "未关联 G-code";
+
+      const start = firstDefined(
+        raw.dateTime,
+        raw.starttime,
+        raw.start_time, raw.startTime, raw.timestamp,
+        raw.time, raw.createTime, raw.create_time, raw.modified
+      );
+
+      const duration = Number(firstDefined(
+        raw.duration,
+        raw.videoDuration, raw.video_duration,
+        raw.timeCost, raw.playTime, raw.videoTime
+      ));
+
+      const size = firstDefined(
+        raw.size, raw.fileSize, raw.file_size,
+        raw.videoSize, raw.video_size
+      );
+
+      const localVideoPath = normalizeTimelapseVideoPath(rawVideoPath, videoName);
+      const url = buildTimelapseVideoUrl(localVideoPath);
+
+      const videoId = firstDefined(raw.videoid, raw.videoId, raw.id) || "";
+      const coverPath = normalizeTimelapseCoverPath(raw.cover, videoId);
+
+      return {
+        index,
+        raw: item,
+        gcode,
+        gcodePath: normaliseLocalGcodePath(gcode),
+        videoName,
+        localVideoPath,
+        coverPath,
+        url,
+        size,
+        start,
+        duration: Number.isFinite(duration) ? duration : null,
+        printDuration: Number(firstDefined(raw.printtime, raw.printTime, raw.print_duration))
+      };
+    }
+
+
+    function sortTimelapseRecords(records) {
+      const { key, direction } = timelapseSortState;
+      if (!key) return records;
+      return records.slice().sort((a, b) => {
+        if (key === "gcode" || key === "videoName") {
+          return String(a[key]).localeCompare(String(b[key]), "zh-CN", { numeric: true }) * direction;
+        }
+        let av, bv;
+        if (key === "size") { av = fileNumericValue(a.size); bv = fileNumericValue(b.size); }
+        if (key === "start") { av = archiveTimeValue(a.start); bv = archiveTimeValue(b.start); }
+        if (key === "duration") { av = a.duration; bv = b.duration; }
+        return compareFileSortValues(av, bv, direction);
+      });
+    }
+
+    function updateTimelapseSortUi() {
+      document.querySelectorAll("[data-timelapse-sort]").forEach(button => {
+        const active = button.dataset.timelapseSort === timelapseSortState.key;
+        button.classList.toggle("active", active);
+        const mark = button.querySelector(".sort-mark");
+        if (mark) mark.textContent = active ? (timelapseSortState.direction === 1 ? "↑" : "↓") : "⇅";
+      });
+    }
+
+    function updateTimelapseSelectionUi() {
+      const checks = Array.from(document.querySelectorAll("#timelapseContent .archive-card-check"));
+      const selected = checks.filter(check => check.checked).length;
+      checks.forEach(check => check.closest(".archive-card")?.classList.toggle("selected", check.checked));
+
+      $("#timelapseSelectedCount").textContent = String(selected);
+      $("#timelapseTotalCount").textContent = String(checks.length);
+
+      const selectAll = $("#selectAllTimelapse");
+      selectAll.checked = checks.length > 0 && selected === checks.length;
+      selectAll.indeterminate = selected > 0 && selected < checks.length;
+
+      $("#exportSelectedTimelapse").disabled = selected === 0;
+      $("#deleteSelectedTimelapse").disabled = selected === 0;
+    }
+
+    function selectedTimelapseRecords() {
+      return Array.from(document.querySelectorAll("#timelapseContent .archive-card-check:checked"))
+        .map(check => timelapseRecords[Number(check.closest(".archive-card")?.dataset.archiveIndex)])
+        .filter(Boolean);
+    }
+
+    function renderTimelapse(items, selectedKeys = null) {
       const target = $("#timelapseContent");
-      if (!Array.isArray(items) || !items.length) {
+      timelapseSourceItems = Array.isArray(items) ? items.slice(0, 100) : [];
+
+      if (!timelapseSourceItems.length) {
+        timelapseRecords = [];
         target.className = "empty-state";
         target.innerHTML = `<div><strong>没有找到延时摄影文件</strong>开启延时摄影并完成打印后，视频会出现在这里。</div>`;
+        $("#timelapseSelectedCount").textContent = "0";
+        $("#timelapseTotalCount").textContent = "0";
+        updateTimelapseSortUi();
         return;
       }
 
-      target.className = "data-list";
-      target.innerHTML = items.slice(0, 100).map(item => {
-        const name = typeof item === "string" ? item :
-          findObjectValue(item, ["name", "filename", "file", "path", "videoName"]) ?? "延时摄影";
-        const time = typeof item === "object" ?
-          findObjectValue(item, ["time", "date", "createTime", "modified"]) ?? "" : "";
-        return `
-          <div class="data-row">
-            <div class="data-main">
-              <div class="data-title">${escapeHtml(getFileName(name))}</div>
-              <div class="data-sub">${escapeHtml(String(name))}</div>
+      const mapped = timelapseSourceItems.map((item, index) => {
+        const record = normalizeTimelapseRecord(item, index);
+        const local = findLocalGcodeInfo(record.gcode) || findLocalGcodeInfo(record.gcodePath);
+        if (local?.path) record.gcodePath = normaliseLocalGcodePath(local.path);
+        return record;
+      });
+      timelapseRecords = sortTimelapseRecords(mapped).map((record, index) => ({ ...record, index }));
+
+      target.className = "archive-grid";
+      target.innerHTML = timelapseRecords.map(record => `
+        <article class="archive-card timelapse-card" data-archive-index="${record.index}">
+          <div class="archive-card-thumb">
+            <img alt="" aria-hidden="true">
+            <span class="archive-thumb-placeholder">VIDEO</span>
+          </div>
+          <div class="archive-card-body">
+            <div class="archive-title-row">
+              <div class="archive-card-title" title="${escapeHtml(record.gcode)}">${escapeHtml(record.gcode)}</div>
+              <button class="archive-share" type="button" title="拷贝视频链接" aria-label="拷贝视频链接">⌯</button>
             </div>
-            <div class="data-side">${escapeHtml(formatDate(time))}</div>
-          </div>`;
-      }).join("");
+            <div class="timelapse-details">
+              <div class="timelapse-detail-line" title="${escapeHtml(record.videoName)}">
+                <strong>视频名称:</strong> ${escapeHtml(record.videoName)}
+              </div>
+              <div class="timelapse-detail-line">
+                <strong>视频大小:</strong> ${escapeHtml(formatBytes(record.size))}
+              </div>
+              <div class="timelapse-detail-line">
+                <strong>开始时间:</strong> ${escapeHtml(formatArchiveDate(record.start))}
+              </div>
+              <div class="timelapse-detail-line">
+                <strong>视频时长:</strong> ${escapeHtml(record.duration == null ? "--" : formatArchiveDuration(record.duration))}
+              </div>
+            </div>
+          </div>
+          <input class="archive-card-check" type="checkbox"
+                 ${selectedKeys?.has(record.videoName) ? "checked" : ""}
+                 aria-label="选择 ${escapeHtml(record.videoName)}">
+        </article>`).join("");
+
+      target.querySelectorAll(".archive-card").forEach(card => {
+        card.addEventListener("contextmenu", event => showTimelapseContextMenu(event, card));
+        card.querySelector(".archive-share")?.addEventListener("click", event => {
+          event.stopPropagation();
+          const record = timelapseRecords[Number(card.dataset.archiveIndex)];
+          if (record) copyTimelapseLink(record);
+        });
+      });
+      target.querySelectorAll(".archive-card-check").forEach(check => {
+        check.addEventListener("change", updateTimelapseSelectionUi);
+      });
+
+      document.querySelectorAll("#timelapseContent .archive-card-thumb img").forEach(img => {
+        const card = img.closest(".archive-card");
+        const record = timelapseRecords[Number(card?.dataset.archiveIndex)];
+        if (record) hydrateTimelapseCover(img, record);
+      });
+      updateTimelapseSortUi();
+      updateTimelapseSelectionUi();
     }
+
+    function toggleTimelapseSort(key) {
+      const selected = new Set(selectedTimelapseRecords().map(record => record.videoName));
+      if (timelapseSortState.key === key) timelapseSortState.direction *= -1;
+      else {
+        timelapseSortState.key = key;
+        timelapseSortState.direction = 1;
+      }
+      renderTimelapse(timelapseSourceItems, selected);
+    }
+
+    function positionArchiveContextMenu(menu, x, y) {
+      hideFileContextMenu();
+      if (menu !== $("#historyContextMenu")) hideHistoryContextMenu();
+      if (menu !== $("#timelapseContextMenu")) hideTimelapseContextMenu();
+
+      menu.hidden = false;
+      menu.style.left = "0px";
+      menu.style.top = "0px";
+      const rect = menu.getBoundingClientRect();
+      const margin = 8;
+      menu.style.left = `${Math.max(margin, Math.min(x, window.innerWidth - rect.width - margin))}px`;
+      menu.style.top = `${Math.max(margin, Math.min(y, window.innerHeight - rect.height - margin))}px`;
+    }
+
+    function hideTimelapseContextMenu() {
+      $("#timelapseContextMenu").hidden = true;
+      timelapseContextTargetIndex = -1;
+    }
+
+    function showTimelapseContextMenu(event, card) {
+      event.preventDefault();
+      const index = Number(card?.dataset.archiveIndex);
+      const record = timelapseRecords[index];
+      if (!record) return;
+
+      const check = card.querySelector(".archive-card-check");
+      if (check && !check.checked) {
+        document.querySelectorAll("#timelapseContent .archive-card-check").forEach(item => item.checked = false);
+        check.checked = true;
+        updateTimelapseSelectionUi();
+      }
+
+      timelapseContextTargetIndex = index;
+      positionArchiveContextMenu($("#timelapseContextMenu"), event.clientX, event.clientY);
+    }
+
+    function copyTimelapseLink(record) {
+      if (!record?.url) return;
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(record.url)
+          .then(() => showToast("视频链接已复制"))
+          .catch(() => window.prompt("复制视频链接", record.url));
+      } else {
+        window.prompt("复制视频链接", record.url);
+      }
+    }
+
+    function exportTimelapseRecord(record) {
+      if (!record?.url) return;
+      const link = document.createElement("a");
+      link.href = record.url;
+      link.download = record.videoName || "";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+
+    async function deleteTimelapseRecords(records) {
+      const clean = (records || []).filter(Boolean);
+      if (!clean.length) return;
+      if (!confirm(`确定删除 ${clean.length} 个延时摄影视频吗？此操作无法撤销。`)) return;
+
+      let submitted = 0;
+      for (const record of clean) {
+        // Creality's reverse-engineered protocol exposes ctrlVideoFiles for
+        // removing/renaming videos. The exact object form used by K2 firmware
+        // is remove + filename.
+        const ok = sendSet({
+          ctrlVideoFiles: {
+            action: "remove",
+            file: record.videoName
+          }
+        }, true);
+        if (ok) submitted++;
+      }
+
+      showToast(`已提交删除 ${submitted} / ${clean.length} 个视频`);
+      setTimeout(refreshTimelapse, 600);
+    }
+
 
     function handleSpecialMessage(message) {
       if (message?.boxsInfo) {
@@ -3868,12 +6340,39 @@
         }
       }
 
-      const fileKeys = ["gcodeFile", "gcodeFiles", "gcodeFileList", "fileList"];
+      const fileKeys = [
+        "reqGcodeFile",
+        "gcodeFile",
+        "gcodeFiles",
+        "gcodeFileList",
+        "fileList",
+        "localGcodeFileInfo",
+        "local_gcode_file_info"
+      ];
+
       for (const key of fileKeys) {
-        if (message?.[key] !== undefined) {
-          renderFileList(extractFirstArray(message[key]) || (Array.isArray(message[key]) ? message[key] : []));
-          break;
+        if (message?.[key] === undefined) continue;
+
+        const source = message[key];
+        const items = extractFirstArray(source)
+          || (Array.isArray(source) ? source : [])
+          || [];
+
+        if (items.length) {
+          updateLocalGcodeCatalog(items);
+
+          // Keep the Moonraker list if it is already visible because it has
+          // reliable file paths/sizes. The newly received K2 catalog will
+          // enrich those records in place with filamentWeight.
+          if (!currentFileSourceItems.length) {
+            renderFileList(items);
+          } else {
+            refreshVisibleLocalFileFilamentWeights();
+                }
         }
+
+        if (printerState.printFileName) renderPrinterStatus();
+        break;
       }
 
       const historyKeys = ["history", "historyList", "printHistory"];
@@ -4015,6 +6514,8 @@
 
     async function refreshFiles() {
       const target = $("#filesContent");
+      // Refresh the K2 local_gcode index as well as Moonraker's file list.
+      sendGet({ reqGcodeFile: 1 }, true);
       target.className = "empty-state";
       target.innerHTML = `<div><strong>正在读取本地文件...</strong></div>`;
       try {
@@ -4022,6 +6523,9 @@
         const items = Array.isArray(payload?.result) ? payload.result : extractFirstArray(payload?.result ?? payload);
         if (!items) throw new Error("未找到文件数组");
         renderFileList(items);
+        // Ask K2 again after the Moonraker cards exist. This ensures a late
+        // filamentWeight response can enrich the already-rendered cards.
+        setTimeout(() => sendGet({ reqGcodeFile: 1 }, true), 180);
         log(`Moonraker 文件列表：${items.length} 项。`);
       } catch (error) {
         log(`Moonraker 文件接口不可用，改用 K2 WebSocket：${error.message}`);
@@ -4033,6 +6537,7 @@
     }
 
     async function refreshHistory() {
+      sendGet({ reqGcodeFile: 1 }, true);
       const target = $("#historyContent");
       target.className = "empty-state";
       target.innerHTML = `<div><strong>正在读取历史记录...</strong></div>`;
@@ -4062,6 +6567,7 @@
     }
 
     function refreshTimelapse() {
+      sendGet({ reqGcodeFile: 1 }, true);
       $("#timelapseContent").className = "empty-state";
       $("#timelapseContent").innerHTML = `<div><strong>正在读取延时摄影列表...</strong></div>`;
       if (!sendGet({ reqElapseVideoList: 1 }, true)) {
@@ -4112,7 +6618,8 @@
               getToken: 1,
               ReqPrinterPara: 1,
               boxsInfo: 1,
-              reqMaterials: 1
+              reqMaterials: 1,
+              reqGcodeFile: 1
             }
           }));
         });
@@ -4407,6 +6914,7 @@
       const open = !debugBox.hidden;
       toggleDebugButton.classList.toggle("active", open);
       toggleDebugButton.setAttribute("aria-expanded", String(open));
+      if (open) debugBox.textContent = logLines.join("\n");
     });
 
     lightSwitch.addEventListener("change", () => setLight(lightSwitch.checked));
@@ -4510,37 +7018,102 @@
     updateFileSortUi();
 
     document.addEventListener("pointerdown", event => {
-      const menu = $("#fileContextMenu");
-      if (!menu.hidden && !menu.contains(event.target)) hideFileContextMenu();
+      const fileMenu = $("#fileContextMenu");
+      const historyMenu = $("#historyContextMenu");
+      const timelapseMenu = $("#timelapseContextMenu");
+      if (!fileMenu.hidden && !fileMenu.contains(event.target)) hideFileContextMenu();
+      if (!historyMenu.hidden && !historyMenu.contains(event.target)) hideHistoryContextMenu();
+      if (!timelapseMenu.hidden && !timelapseMenu.contains(event.target)) hideTimelapseContextMenu();
     });
     document.addEventListener("contextmenu", event => {
       if (!event.target.closest("#filesContent .file-card")) hideFileContextMenu();
     });
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape") hideFileContextMenu();
-    });
-    window.addEventListener("resize", hideFileContextMenu);
-    window.addEventListener("scroll", hideFileContextMenu, true);
-
-    printThumbImage.addEventListener("load", () => {
-      if (printThumbImage.naturalWidth > 0 && printThumbImage.naturalHeight > 0) {
-        printThumbPlaceholder.hidden = true;
-        printThumbImage.hidden = false;
-        printThumbElement.classList.add("has-image");
-        log(`当前打印预览图已加载：${printThumbImage.naturalWidth}×${printThumbImage.naturalHeight}`);
+      if (event.key === "Escape") {
+        hideFileContextMenu();
+        hideHistoryContextMenu();
+        hideTimelapseContextMenu();
       }
     });
+    window.addEventListener("resize", () => {
+      hideFileContextMenu();
+      hideHistoryContextMenu();
+      hideTimelapseContextMenu();
+    });
+    window.addEventListener("scroll", () => {
+      hideFileContextMenu();
+      hideHistoryContextMenu();
+      hideTimelapseContextMenu();
+    }, true);
 
     printThumbImage.addEventListener("error", () => {
       if (currentPrintThumbnailPath) {
-        log(`当前打印预览图加载失败：${currentPrintThumbnailPath}`);
+        previewUrlCache.delete(`current:${currentPrintThumbnailPath}`);
+        currentPrintPreviewRetryAt = Date.now() + 8000;
       }
-      // Keep only the neutral placeholder; never expose broken-image alt text.
-      setCurrentPrintThumbnail("", "");
+      clearCurrentPrintThumbnail();
     });
 
-    $("#refreshHistory").addEventListener("click", refreshHistory);
-    $("#refreshTimelapse").addEventListener("click", refreshTimelapse);
+    document.querySelectorAll("[data-history-sort]").forEach(button => {
+      button.addEventListener("click", () => toggleHistorySort(button.dataset.historySort));
+    });
+    document.querySelectorAll("[data-timelapse-sort]").forEach(button => {
+      button.addEventListener("click", () => toggleTimelapseSort(button.dataset.timelapseSort));
+    });
+
+    $("#selectAllHistory").addEventListener("change", event => {
+      document.querySelectorAll("#historyContent .archive-card-check").forEach(check => {
+        check.checked = event.target.checked;
+      });
+      updateHistorySelectionUi();
+    });
+
+    $("#selectAllTimelapse").addEventListener("change", event => {
+      document.querySelectorAll("#timelapseContent .archive-card-check").forEach(check => {
+        check.checked = event.target.checked;
+      });
+      updateTimelapseSelectionUi();
+    });
+
+    $("#exportSelectedHistory").addEventListener("click", () => {
+      selectedHistoryRecords().forEach((record, index) => {
+        setTimeout(() => historyExportRecord(record), index * 180);
+      });
+    });
+    $("#deleteSelectedHistory").addEventListener("click", () => {
+      deleteHistoryRecords(selectedHistoryRecords());
+    });
+
+    $("#exportSelectedTimelapse").addEventListener("click", () => {
+      selectedTimelapseRecords().forEach((record, index) => {
+        setTimeout(() => exportTimelapseRecord(record), index * 180);
+      });
+    });
+    $("#deleteSelectedTimelapse").addEventListener("click", () => {
+      deleteTimelapseRecords(selectedTimelapseRecords());
+    });
+
+    $("#historyContextMenu").addEventListener("click", event => {
+      const button = event.target.closest("[data-history-action]");
+      if (!button || button.disabled) return;
+      const record = historyRecords[historyContextTargetIndex];
+      hideHistoryContextMenu();
+      if (!record) return;
+      if (button.dataset.historyAction === "reprint") historyReprintRecord(record);
+      if (button.dataset.historyAction === "export") historyExportRecord(record);
+      if (button.dataset.historyAction === "delete") deleteHistoryRecords([record]);
+    });
+
+    $("#timelapseContextMenu").addEventListener("click", event => {
+      const button = event.target.closest("[data-timelapse-action]");
+      if (!button) return;
+      const record = timelapseRecords[timelapseContextTargetIndex];
+      hideTimelapseContextMenu();
+      if (!record) return;
+      if (button.dataset.timelapseAction === "copy") copyTimelapseLink(record);
+      if (button.dataset.timelapseAction === "export") exportTimelapseRecord(record);
+      if (button.dataset.timelapseAction === "delete") deleteTimelapseRecords([record]);
+    });
 
     timelapseSwitch.addEventListener("change", () => {
       const value = timelapseSwitch.checked ? 1 : 0;
